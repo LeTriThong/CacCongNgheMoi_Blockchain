@@ -22,9 +22,16 @@ const genesisBlock = new Block(0, genesisHash, null , 1618415210 ,"first block")
 
 const blockchain = [genesisBlock];
 
+const getBlockchain = () => {
+    return blockchain;
+}
 
 const calculateHash = (index, previousHash, timestamp, data) => {
     return CryptoJS.SHA384(index + previousHash + timestamp + data).toString();
+}
+
+const calculateHashBlock = (block) => {
+    return calculateHash(block.index, block.previousHash, block.timestamp, block.data);
 }
 
 const generateNextBlock = (blockData) => {
@@ -35,6 +42,12 @@ const generateNextBlock = (blockData) => {
 
     let newBlock = new Block(nextIndex, nextHash, previousBlock.hash, nextTimestamp, blockData);
     return newBlock;
+}
+
+const addBlock = (newBlock) => {
+    if (isBlockValid(newBlock, getLatestBlock())) {
+        blockchain.push(newBlock);
+    }
 }
 
 const getLatestBlock = () => {
@@ -74,7 +87,7 @@ const isChainValid = (blockchainToValidate) => {
 };
 
 const replaceChain = (newBlocks) => {
-    if (isValidChain(newBlocks) && newBlocks.length > getBlockchain().length) {
+    if (isChainValid(newBlocks) && newBlocks.length > getBlockchain().length) {
         console.log('Received blockchain is valid. Replacing current blockchain with received blockchain');
         blockchain = newBlocks;
         broadcastLatest();
@@ -92,5 +105,4 @@ const isValidBlockStructure = (block) => {
 };
 
 
-
-
+module.exports = {Block, getBlockchain, isBlockValid, isChainValid, addBlock, generateNextBlock, getLatestBlock, replaceChain, isValidBlockStructure}
