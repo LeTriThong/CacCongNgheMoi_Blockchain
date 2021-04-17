@@ -16,7 +16,6 @@ const initHttpServer = (httpPort) => {
     });
 
     app.post('/mineBlock', (req, res) => {
-        
         const newBlock = bc.generateNextBlock(req.body.data);
         res.send(newBlock);
     });
