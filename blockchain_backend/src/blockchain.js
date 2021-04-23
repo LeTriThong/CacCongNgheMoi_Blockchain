@@ -98,7 +98,7 @@ const findBlock = (index, previousHash, timestamp, data, diff) => {
 
 
 const calculateHash = (index, previousHash, timestamp, data, diff, nonce) => {
-    return CryptoJS.SHA384(index + previousHash + timestamp + data + diff + nonce).toString();
+    return CryptoJS.SHA256(index + previousHash + timestamp + data + diff + nonce).toString();
 }
 
 const calculateHashBlock = (block) => {
