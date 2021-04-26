@@ -1,5 +1,4 @@
 const express = require('express');
-const bodyParser = require('body-parser');
 
 const bc = require('./src/blockchain');
 const p2p = require('./src/p2p');
@@ -25,6 +24,40 @@ const initHttpServer = (httpPort) => {
     app.post('/mineBlock', (req, res) => {
         const newBlock = bc.generateNextBlock(req.body.data);
         res.send(newBlock);
+    });
+
+    app.post('/mineRawBlock', (req, res) => {
+        if (req.body.data === null) {
+            res.send('Missing data');
+            return;
+        }
+
+        const newBlock = bc.generateRawNextBlock(req.body.data);
+
+        if (newBlock === null) {
+            res.status(400).send("Could not generate block");
+        }
+        else {
+            res.send(newBlock);
+        }
+
+    });
+
+    app.get('/balance', (req, res) => {
+        const balance = getAccountBalance();
+        res.send({'balance': balance});
+    });
+
+    app.post('/mineTransaction', (req, res) => {
+        const address = req.body.address;
+        const amount = req.body.amount;
+        try {
+            const resp = generatenextBlockWithTransaction(address, amount);
+            res.send(resp);
+        } catch (e) {
+            console.log(e.message);
+            res.status(400).send(e.message);
+        }
     });
 
     app.get('/peers', (req, res) => {

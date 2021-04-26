@@ -267,4 +267,5 @@ const replaceChain = (newBlocks) => {
 
 
 
-module.exports = { Block, getBlockchain, isBlockValid, isChainValid, addBlockToChain, generateNextBlock, getLatestBlock, replaceChain, isValidBlockStructure }
+module.exports = { Block, getBlockchain, isBlockValid, isChainValid, addBlockToChain, generateNextBlock, getLatestBlock, replaceChain, isValidBlockStructure,
+generateRawNextBlock, getAccountBalance }
