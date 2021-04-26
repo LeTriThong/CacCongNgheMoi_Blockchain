@@ -1,5 +1,7 @@
 const CryptoJS = require('crypto-js');
 const { broadcastLatest, initP2PServer } = require('./p2p');
+const { processTransactions } = require('./transaction');
+const { getPublicFromWallet } = require('./wallet');
 const MILLISECONDS_PER_SEC = 1000;
 
 class Block {
@@ -33,6 +35,9 @@ const BLOCK_GENERATION_INTERVAL_IN_SEC = 10;
 const DIFFICULTY_ADJUSTMENT_INTERVAL = 10;
 
 let blockchain = [genesisBlock];
+
+
+let unspentTxOuts = [];
 
 const getBlockchain = () => {
     return blockchain;
@@ -71,6 +76,25 @@ const getCurrentTimestamp = () => {
     return Math.round(new Date().getTime() / MILLISECONDS_PER_SEC);
 }
 
+/**
+ * 
+ * @param {Transaction[]} blockData 
+ */
+const generateRawNextBlock = (blockData) => {
+    const previousBlock = getLatestBlock();
+    const difficulty = getDifficulty(getBlockchain());
+    const nextIndex = previousBlock.index + 1;
+    const nextTimestamp = getCurrentTimestamp();
+    const newBlock = findBlock(nextIndex, previousBlock.hash, nextTimestamp, blockData, difficulty);
+    if (addBlockToChain(newBlock)) {
+        broadcastLatest();
+        return newBlock;
+    } else {
+        return null;
+    }
+
+}
+
 const generateNextBlock = (blockData) => {
     let previousBlock = getLatestBlock();
     let diff = getDifficulty(getBlockchain());
@@ -79,10 +103,23 @@ const generateNextBlock = (blockData) => {
     let nextTimestamp = getCurrentTimestamp();
 
     let newBlock = findBlock(nextIndex, nextHash, previousBlock.hash, nextTimestamp, blockData);
-    addBlock(newBlock);
+    addBlockToChain(newBlock);
     broadcastLatest();
     return newBlock;
 }
+
+const generatenextBlockWithTransaction = (receiverAddress, amount) => {
+    if (!isValidAddress(receiverAddress)) {
+        throw Error('invalid address');
+    }
+    if (typeof amount !== 'number') {
+        throw Error('invalid amount');
+    }
+    const coinbaseTx = getCoinbaseTransaction(getPublicFromWallet(), getLatestBlock().index + 1);
+    const tx = createTransaction(receiverAddress, amount, getPrivateFromWallet(), unspentTxOuts);
+    const blockData = [coinbaseTx, tx];
+    return generateRawNextBlock(blockData);
+};
 
 const findBlock = (index, previousHash, timestamp, data, diff) => {
     let nonce = 0;
@@ -95,7 +132,9 @@ const findBlock = (index, previousHash, timestamp, data, diff) => {
     }
 }
 
-
+const getAccountBalance = () => {
+    return getBalance(getPublicFromWallet(), unspentTxOuts);
+};
 
 const calculateHash = (index, previousHash, timestamp, data, diff, nonce) => {
     return CryptoJS.SHA256(index + previousHash + timestamp + data + diff + nonce).toString();
@@ -107,10 +146,19 @@ const calculateHashBlock = (block) => {
 
 
 
-const addBlock = (newBlock) => {
-    if (isBlockValid(newBlock, getLatestBlock())) {
-        blockchain.push(newBlock);
+const addBlockToChain = (newBlock) => {
+    if (isValidNewBlock(newBlock, getLatestBlock())) {
+        const retVal = processTransactions(newBlock.data, unspentTxOuts, newBlock.index);
+        if (retVal === null) {
+            return false;
+        } else {
+            blockchain.push(newBlock);
+            unspentTxOuts = retVal;
+            return true;
+
+        }
     }
+    return false;
 }
 
 const isValidBlockStructure = (block) => {
@@ -219,4 +267,4 @@ const replaceChain = (newBlocks) => {
 
 
 
-module.exports = { Block, getBlockchain, isBlockValid, isChainValid, addBlock, generateNextBlock, getLatestBlock, replaceChain, isValidBlockStructure }
+module.exports = { Block, getBlockchain, isBlockValid, isChainValid, addBlockToChain, generateNextBlock, getLatestBlock, replaceChain, isValidBlockStructure }

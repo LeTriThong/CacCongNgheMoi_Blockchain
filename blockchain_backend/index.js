@@ -12,6 +12,12 @@ const initHttpServer = (httpPort) => {
     const app = express();
     // app.use(bodyParser.json());
 
+    app.use((req, res, next) => {
+        res.status(400).json({
+            error_message: 'Bad request'
+        });
+    });
+
     app.get('/blocks', (req, res) => {
         res.send(bc.getBlockchain());
     });

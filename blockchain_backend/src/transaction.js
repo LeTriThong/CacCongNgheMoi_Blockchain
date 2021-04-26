@@ -217,8 +217,7 @@ const getCoinbaseTransaction = (address, blockIndex) => {
     return t;
 };
 
-const signTxIn = (transaction, txInIndex,
-                  privateKey, aUnspentTxOuts) => {
+const signTxIn = (transaction, txInIndex, privateKey, aUnspentTxOuts) => {
     const txIn = transaction.txIns[txInIndex];
 
     const dataToSign = transaction.id;
