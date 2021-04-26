@@ -1,5 +1,5 @@
 const CryptoJS = require('crypto-js')
-const ecdsa = require('elliptic')
+const ecdsa = require('elliptic').ec
 const _ = require('lodash')
 
 const ec = new ecdsa('secp256k1');
@@ -29,8 +29,8 @@ class UnspentTxOut {
 }
 
 /**
- * * The input of transaction unlock the coins
- * * The output of transaction lock the coins
+ * * The inputs of transaction unlock the coins
+ * * The outputs of transaction lock the coins
  */
 
 
@@ -45,7 +45,7 @@ class TxIn {
 }
 
 class TxOut {
-    address     //! Public key (ecdsa)
+    address     //! Public key (hashed by ecdsa)
     amount      //* Amount of coin
 
     constructor(address, amount) {
@@ -59,6 +59,7 @@ class Transaction {
     ixIns       // * All input, type: TxIn[] 
     txOuts      // * All output, type: TxOut[]
 }
+
 /**
  * * Get transaction id by hash the content of transaction
  * ! Do not add signature in txIn to hash

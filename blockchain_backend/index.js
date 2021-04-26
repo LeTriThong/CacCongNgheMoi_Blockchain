@@ -2,7 +2,8 @@ const express = require('express');
 const bodyParser = require('body-parser');
 
 const bc = require('./src/blockchain');
-const p2p = require('./src/p2p')
+const p2p = require('./src/p2p');
+const { initWallet } = require('./src/wallet');
 
 const httpPort = 3001;
 const p2pPort = 6001;
@@ -36,3 +37,4 @@ const initHttpServer = (httpPort) => {
 
 initHttpServer(httpPort);
 p2p.initP2PServer(p2pPort);
+initWallet();
