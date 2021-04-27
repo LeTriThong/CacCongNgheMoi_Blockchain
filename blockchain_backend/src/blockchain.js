@@ -1,7 +1,8 @@
 const CryptoJS = require('crypto-js');
 const { broadcastLatest, initP2PServer } = require('./p2p');
 const { processTransactions } = require('./transaction');
-const { getPublicFromWallet } = require('./wallet');
+const { addToTransactionPool } = require('./transactionPool');
+const { getPublicFromWallet, createTransaction, getPrivateFromWallet } = require('./wallet');
 const MILLISECONDS_PER_SEC = 1000;
 
 class Block {
@@ -36,8 +37,23 @@ const DIFFICULTY_ADJUSTMENT_INTERVAL = 10;
 
 let blockchain = [genesisBlock];
 
+const genesisTransaction = {
+    'txIns': [{'signature': '', 'txOutId': '', 'txOutIndex': 0}],
+    'txOuts': [{
+        'address': '04bfcab8722991ae774db48f934ca79cfb7dd991229153b9f732ba5334aafcd8e7266e47076996b55a14bf9913ee3145ce0cfc1372ada8ada74bd287450313534a',
+        'amount': 50
+    }],
+    'id': 'e655f6a5f26dc9b4cac6e46f52336428287759cf81ef5ff10854f69d68f43fa3'
+};
 
-let unspentTxOuts = [];
+let blockchain = [genesisBlock];
+
+// the unspent txOut of genesis block is set to unspentTxOuts on startup
+let unspentTxOuts = processTransactions(blockchain[0].data, [], 0);
+
+
+const getUnspentTxOuts = () => _.cloneDeep(unspentTxOuts);
+
 
 const getBlockchain = () => {
     return blockchain;
@@ -135,6 +151,11 @@ const findBlock = (index, previousHash, timestamp, data, diff) => {
 const getAccountBalance = () => {
     return getBalance(getPublicFromWallet(), unspentTxOuts);
 };
+
+const sendTransaction = (address, amount) => {
+    const tx = createTransaction(address, amount,getPrivateFromWallet());
+    addToTransactionPool(tx, getUns)
+}
 
 const calculateHash = (index, previousHash, timestamp, data, diff, nonce) => {
     return CryptoJS.SHA256(index + previousHash + timestamp + data + diff + nonce).toString();

@@ -369,5 +369,5 @@ const isValidAddress = (address) => {
 module.exports =  {
     processTransactions, signTxIn, getTransactionId,
     UnspentTxOut, TxIn, TxOut, getCoinbaseTransaction, getPublicKey,
-    Transaction
+    Transaction,validateTransaction
 }

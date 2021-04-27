@@ -69,6 +69,10 @@ const initHttpServer = (httpPort) => {
         res.send();
     });
 
+    app.post('/sendTransaction', (req,res) => {
+
+    });
+
     app.listen(httpPort, () => {
         console.log("App is listening http on port: " + httpPort)
     });
