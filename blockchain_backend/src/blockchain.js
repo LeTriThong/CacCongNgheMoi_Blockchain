@@ -93,8 +93,9 @@ const getCurrentTimestamp = () => {
 }
 
 /**
- * 
+ * Generate a new block that matches difficulties required
  * @param {Transaction[]} blockData 
+ * @returns a new block that matches difficulties required
  */
 const generateRawNextBlock = (blockData) => {
     const previousBlock = getLatestBlock();
@@ -116,6 +117,31 @@ const generateNextBlock = (blockData) => {
     const blockData = [coinbaseTx].concat(getTransactionPool());
     return generateRawNextBlock(blockData);
 }
+
+// gets the unspent transaction outputs owned by the wallet
+const getMyUnspentTransactionOutputs = () => {
+    return findUnspentTxOuts(getPublicFromWallet(), getUnspentTxOuts());
+};
+
+/**
+ * Create a block with transaction in it
+ * @param {string} receiverAddress 
+ * @param {number} amount 
+ * @returns a raw block with transaction
+ */
+const generatenextBlockWithTransaction = (receiverAddress, amount) => {
+    if (!isValidAddress(receiverAddress)) {
+        throw Error('invalid address');
+    }
+    if (typeof amount !== 'number') {
+        throw Error('invalid amount');
+    }
+    const coinbaseTx = getCoinbaseTransaction(getPublicFromWallet(), getLatestBlock().index + 1);
+    const tx = createTransaction(receiverAddress, amount, getPrivateFromWallet(), getUnspentTxOuts(), getTransactionPool());
+    const blockData = [coinbaseTx, tx];
+    return generateRawNextBlock(blockData);
+};
+
 
 const generatenextBlockWithTransaction = (receiverAddress, amount) => {
     if (!isValidAddress(receiverAddress)) {
@@ -147,7 +173,9 @@ const getAccountBalance = () => {
 
 const sendTransaction = (address, amount) => {
     const tx = createTransaction(address, amount,getPrivateFromWallet());
-    addToTransactionPool(tx, getUns)
+    addToTransactionPool(tx, getUnspentTxOuts());
+    broadcastTransactionPool();
+    return tx;
 }
 
 const calculateHash = (index, previousHash, timestamp, data, diff, nonce) => {
@@ -282,4 +310,4 @@ const replaceChain = (newBlocks) => {
 
 
 module.exports = { Block, getBlockchain, isBlockValid, isChainValid, addBlockToChain, generateNextBlock, getLatestBlock, replaceChain, isValidBlockStructure,
-generateRawNextBlock, getAccountBalance }
+generateRawNextBlock, sendTransaction, getAccountBalance, generatenextBlockWithTransaction, getUnspentTxOuts, getMyUnspentTransactionOutputs }

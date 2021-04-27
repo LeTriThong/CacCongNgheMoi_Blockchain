@@ -216,4 +216,4 @@ const connectToPeers = newPeer => {
     });
 };
 
-module.exports = { connectToPeers, broadcastLatest, initP2PServer, getSockets };
+module.exports = { connectToPeers, broadcastTransactionPool, broadcastLatest, initP2PServer, getSockets };
