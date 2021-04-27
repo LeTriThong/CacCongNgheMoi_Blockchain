@@ -7,9 +7,11 @@ const bc = require('./blockchain');
 const sockets = [];
 
 const MessageTypeEnum = {
-    QUERY_LATEST : 0,
-    QUERY_ALL : 1,
-    RESPONSE_BLOCKCHAIN : 2
+    QUERY_LATEST: 0,
+    QUERY_ALL: 1,
+    RESPONSE_BLOCKCHAIN: 2,
+    QUERY_TRANSACTION_POOL: 3,
+    RESPONSE_TRANSACTION_POOL: 4
 }
 
 class Message {
@@ -37,6 +39,16 @@ const initP2PServer = p2pPort => {
 const getSockets = () => {
     return sockets;
 }
+
+const responseTransactionPoolMsg = () => ({
+    'type': MessageType.RESPONSE_TRANSACTION_POOL,
+    'data': JSON.stringify(getTransactionPool())
+});
+
+const queryTransactionPoolMsg = () => ({
+    'type': MessageType.QUERY_TRANSACTION_POOL,
+    'data': null
+});
 
 
 const initConnection = ws => {
@@ -78,6 +90,27 @@ const initMessageHandler = ws => {
 
                 handleBlockchainResponse(receivedBlocks);
                 break;
+            case MessageTypeEnum.QUERY_TRANSACTION_POOL:
+                write(ws, responseTransactionPoolMsg());
+                break;
+            case MessageTypeEnum.RESPONSE_TRANSACTION_POOL:
+                // TODO: Fix this cast 
+                const receivedTransactions = JSON.parse(message.data);
+                    if (receivedTransactions === null) {
+                        console.log('invalid transaction received: %s', JSON.stringify(message.data));
+                        break;
+                    }
+                    receivedTransactions.forEach((transaction) => {
+                        try {
+                            handleReceivedTransaction(transaction);
+                            // if no error is thrown, transaction was indeed added to the pool
+                            // let's broadcast transaction pool
+                            broadcastTransactionPool();
+                        } catch (e) {
+                            console.log(e.message);
+                        }
+                    });
+                break;
         }
     })
 }
@@ -115,8 +148,8 @@ const responseChainMsg = () => {
 }
 
 const responseLatestMsg = () => {
-    
-    let data =  {
+
+    let data = {
         'type': MessageTypeEnum.QUERY_ALL,
         'data': JSON.stringify(bc.getLatestBlock())
     }
@@ -163,6 +196,10 @@ const handleBlockchainResponse = receivedBlocks => {
     } else {
         console.log('received blockchain is not longer than received blockchain. Do nothing');
     }
+};
+
+const broadcastTransactionPool = () => {
+    broadcast(responseTransactionPoolMsg());
 };
 
 const broadcastLatest = () => {

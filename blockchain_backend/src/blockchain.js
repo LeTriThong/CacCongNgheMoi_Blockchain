@@ -1,7 +1,7 @@
 const CryptoJS = require('crypto-js');
 const { broadcastLatest, initP2PServer } = require('./p2p');
 const { processTransactions } = require('./transaction');
-const { addToTransactionPool } = require('./transactionPool');
+const { addToTransactionPool, getTransactionPool } = require('./transactionPool');
 const { getPublicFromWallet, createTransaction, getPrivateFromWallet } = require('./wallet');
 const MILLISECONDS_PER_SEC = 1000;
 
@@ -112,16 +112,9 @@ const generateRawNextBlock = (blockData) => {
 }
 
 const generateNextBlock = (blockData) => {
-    let previousBlock = getLatestBlock();
-    let diff = getDifficulty(getBlockchain());
-    console.log('difficulty: ' + diff);
-    let nextIndex = previousBlock.index + 1;
-    let nextTimestamp = getCurrentTimestamp();
-
-    let newBlock = findBlock(nextIndex, nextHash, previousBlock.hash, nextTimestamp, blockData);
-    addBlockToChain(newBlock);
-    broadcastLatest();
-    return newBlock;
+    const coinbaseTx = getCoinbaseTransaction(getPublicFromWallet(), getLatestBlock().index + 1);
+    const blockData = [coinbaseTx].concat(getTransactionPool());
+    return generateRawNextBlock(blockData);
 }
 
 const generatenextBlockWithTransaction = (receiverAddress, amount) => {

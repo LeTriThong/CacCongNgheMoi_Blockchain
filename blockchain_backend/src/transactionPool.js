@@ -57,7 +57,7 @@ const isValidTxForPool = (tx, aTtransactionPool) => {
     const txPoolIns = getTxPoolIns(aTtransactionPool);
 
     const containsTxIn = (txIns, txIn) => {
-        return _.find(txPoolIns, ((txPoolIn) => {
+        return _.find(txIns, ((txPoolIn) => {
             return txIn.txOutIndex === txPoolIn.txOutIndex && txIn.txOutId === txPoolIn.txOutId;
         }));
     };
