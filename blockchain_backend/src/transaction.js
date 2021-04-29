@@ -7,10 +7,22 @@ const ec = new ecdsa('secp256k1');
 // ! The coin which will be added before the first transaction
 const COINBASE_AMOUNT = 50;
 
+/**
+ * Unspent transaction outputs. When you own some coins in the blockchain, 
+ * what you actually have is a list of unspent transaction outputs
+ * whose public key (address) matches to the private key you own.
+ * 
+ * @property {string} txOutId transaction output id
+ * @property {number} txOutIndex transaction output index
+ * @property {string} address the public key of the receiver, only the receiver can access to this
+ * @property {number} amount amount of coin
+ * 
+ * 
+ */
 class UnspentTxOut {
     txOutId
-    txOutIndex  
-    address     
+    txOutIndex
+    address
     amount
 
     /**
@@ -29,18 +41,23 @@ class UnspentTxOut {
 }
 
 /**
- * * The inputs of transaction unlock the coins
- * * The outputs of transaction lock the coins
+ * ! The inputs of transaction unlock the coins
+ * ! The outputs of transaction lock the coins
  */
 
 
 /**
  * Provide the info where the coins come from
+ * @param {string} txOutId Earlier transaction output id that are referenced
+ * @param {string} txOutIndex Earlier transaction output index that are referenced
+ * @param {string} signature The hash with private key's receiver, in order to make sure that
+ * it's truly the receiver, with the private key can access it
+ *
  */
 class TxIn {
     txOutId         // * Earlier output id
     txOutIndex      // * Earlier output index
-    signature       // * = message hash with private key, not the private key
+    signature       // * message hash with private key, not the private key
 
 }
 
@@ -85,6 +102,9 @@ const getTransactionId = (transaction) => {
  * @returns 
  */
 const validateTransaction = (transaction, aUnspentTxOuts) => {
+    if (!isValidTransactionStructure(transaction)) {
+        return false;
+    }
 
     if (getTransactionId(transaction) !== transaction.id) {
         console.log('invalid tx id: ' + transaction.id);
@@ -142,7 +162,7 @@ const validateBlockTransactions = (aTransactions, aUnspentTxOuts, blockIndex) =>
 // ! TODO: Check this carefully
 
 const hasDuplicates = (txIns) => {
-    const groups = _.countBy(txIns, (txIn) => txIn.txOutId + txIn.txOutId);
+    const groups = _.countBy(txIns, (txIn) => txIn.txOutId + txIn.txOutIndex);
     return _(groups)
         .map((value, key) => {
             if (value > 1) {
@@ -193,7 +213,13 @@ const validateTxIn = (txIn, transaction, aUnspentTxOuts) => {
     const address = referencedUTxOut.address;
 
     const key = ec.keyFromPublic(address, 'hex');
-    return key.verify(transaction.id, txIn.signature);
+    
+    const validSignature = key.verify(transaction.id, txIn.signature);
+    if (!validSignature) {
+        console.log('invalid txIn signature: %s txId: %s address: %s', txIn.signature, transaction.id, referencedUTxOut.address);
+        return false;
+    }
+    return true;
 };
 
 const getTxInAmount = (txIn, aUnspentTxOuts) => {
@@ -222,7 +248,7 @@ const signTxIn = (transaction, txInIndex, privateKey, aUnspentTxOuts) => {
 
     const dataToSign = transaction.id;
     const referencedUnspentTxOut = findUnspentTxOut(txIn.txOutId, txIn.txOutIndex, aUnspentTxOuts);
-    if(referencedUnspentTxOut == null) {
+    if (referencedUnspentTxOut == null) {
         console.log('could not find referenced txOut');
         throw Error();
     }
@@ -291,7 +317,7 @@ const isValidTxInStructure = (txIn) => {
     } else if (typeof txIn.txOutId !== 'string') {
         console.log('invalid txOutId type in txIn');
         return false;
-    } else if (typeof  txIn.txOutIndex !== 'number') {
+    } else if (typeof txIn.txOutIndex !== 'number') {
         console.log('invalid txOutIndex type in txIn');
         return false;
     } else {
@@ -312,18 +338,13 @@ const isValidTxOutStructure = (txOut) => {
     } else if (typeof txOut.amount !== 'number') {
         console.log('invalid amount type in txOut');
         return false;
-    } else {
-        return true;
-    }
+    } 
+    
+    return true;
+    
 };
 
 const isValidTransactionsStructure = (transactions) => {
-    return transactions
-        .map(isValidTransactionStructure)
-        .reduce((a, b) => (a && b), true);
-};
-
-const isValidTransactionStructure = (transaction) => {
     if (typeof transaction.id !== 'string') {
         console.log('transactionId missing');
         return false;
@@ -351,6 +372,34 @@ const isValidTransactionStructure = (transaction) => {
     return true;
 };
 
+const isValidTransactionStructure = (transaction) => {
+    if (typeof transaction.id !== 'string') {
+        console.log('transactionId missing');
+        return false;
+    }
+    if (!(transaction.txIns instanceof Array)) {
+        console.log('invalid txIns type in transaction');
+        return false;
+    }
+    if (!transaction.txIns
+        .map(isValidTxInStructure)
+        .reduce((a, b) => (a && b), true)) {
+        return false;
+    }
+
+    if (!(transaction.txOuts instanceof Array)) {
+        console.log('invalid txIns type in transaction');
+        return false;
+    }
+
+    if (!transaction.txOuts
+        .map(isValidTxOutStructure)
+        .reduce((a, b) => (a && b), true)) {
+        return false;
+    }
+    return true;
+};
+
 //valid address is a valid ecdsa public key in the 04 + X-coordinate + Y-coordinate format
 const isValidAddress = (address) => {
     if (address.length !== 130) {
@@ -366,8 +415,8 @@ const isValidAddress = (address) => {
     return true;
 };
 
-module.exports =  {
+module.exports = {
     processTransactions, signTxIn, getTransactionId,
     UnspentTxOut, TxIn, TxOut, getCoinbaseTransaction, getPublicKey,
-    Transaction,validateTransaction
+    Transaction, validateTransaction
 }

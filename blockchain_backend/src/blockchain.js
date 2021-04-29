@@ -233,7 +233,7 @@ const getAccountBalance = () => {
  * @returns 
  */
 const sendTransaction = (address, amount) => {
-    const newTransaction = createTransaction(address, amount, getPrivateFromWallet());
+    const newTransaction = createTransaction(address, amount, getPrivateFromWallet(), getUnspentTxOuts(), getTransactionPool());
     addToTransactionPool(newTransaction, getUnspentTxOuts());
     broadcastTransactionPool();
     return newTransaction;

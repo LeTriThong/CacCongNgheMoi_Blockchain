@@ -1,7 +1,8 @@
 const _ = require('lodash');
-const {validateTransaction} = require('./transaction');
+const {validateTransaction, Transaction} = require('./transaction');
 
 /**
+ * @type {Transaction[]}
  * List of transaction
  */
 let transactionPool = [];
