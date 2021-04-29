@@ -95,7 +95,10 @@ const setUnspentTxOuts = (newUnspentTxOut) => {
 
 
 
-
+/**
+ * Get the current latest block in the blockchain
+ * @returns the latest block in the blockchain
+ */
 const getLatestBlock = () => {
     return blockchain[blockchain.length - 1];
 }
