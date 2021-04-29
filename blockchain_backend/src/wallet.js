@@ -102,5 +102,9 @@ const createTransaction = (receiverAddress, amount, privateKey, unspentTxOuts) =
     return tx;
 };
 
-module.exports = {createTransaction, getPublicFromWallet,
-    getPrivateFromWallet, getBalance, generatePrivateKey, initWallet};
+const findUnspentTxOuts = (ownerAddress, unspentTxOuts) => {
+    return _.filter(unspentTxOuts, (uTxO) => uTxO.address === ownerAddress);
+}
+
+module.exports = {createTransaction, getPublicFromWallet, 
+    getPrivateFromWallet, getBalance, generatePrivateKey, initWallet, findUnspentTxOuts};
