@@ -285,10 +285,10 @@ const updateUnspentTxOuts = (newTransactions, aUnspentTxOuts) => {
 };
 
 const processTransactions = (aTransactions, aUnspentTxOuts, blockIndex) => {
-
-    if (!isValidTransactionsStructure(aTransactions)) {
-        return null;
-    }
+    console.log("processTransactions");
+    // if (!isValidTransactionStructure(aTransactions)) {
+    //     return null;
+    // }
 
     if (!validateBlockTransactions(aTransactions, aUnspentTxOuts, blockIndex)) {
         console.log('invalid block transactions');
@@ -344,35 +344,10 @@ const isValidTxOutStructure = (txOut) => {
     
 };
 
-const isValidTransactionsStructure = (transactions) => {
-    if (typeof transaction.id !== 'string') {
-        console.log('transactionId missing');
-        return false;
-    }
-    if (!(transaction.txIns instanceof Array)) {
-        console.log('invalid txIns type in transaction');
-        return false;
-    }
-    if (!transaction.txIns
-            .map(isValidTxInStructure)
-            .reduce((a, b) => (a && b), true)) {
-        return false;
-    }
-
-    if (!(transaction.txOuts instanceof Array)) {
-        console.log('invalid txIns type in transaction');
-        return false;
-    }
-
-    if (!transaction.txOuts
-            .map(isValidTxOutStructure)
-            .reduce((a, b) => (a && b), true)) {
-        return false;
-    }
-    return true;
-};
 
 const isValidTransactionStructure = (transaction) => {
+    console.log("isValidTransactionStructure: " + JSON.stringify(transaction));
+    console.log("typeof transaction.id: " + typeof transaction.id);
     if (typeof transaction.id !== 'string') {
         console.log('transactionId missing');
         return false;

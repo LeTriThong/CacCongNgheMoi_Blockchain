@@ -1,10 +1,14 @@
 const CryptoJS = require('crypto-js');
-const { broadcastLatest, initP2PServer } = require('./p2p');
+const WebSocket = require('ws');
+
+const _ = require('lodash');
+// const { Block, blockchain, getBlockchain } = require('./blockchainCore');
+// const { broadcastLatest, initP2PServer } = require('./p2p');
 const { processTransactions, getCoinbaseTransaction, UnspentTxOut } = require('./transaction');
 const { addToTransactionPool, getTransactionPool, updateTransactionPool } = require('./transactionPool');
-const { getPublicFromWallet, createTransaction, getPrivateFromWallet } = require('./wallet');
+// const { isHashMatchesDifficulty } = require('./util');
+const { getPublicFromWallet, createTransaction, getPrivateFromWallet, getBalance } = require('./wallet');
 const MILLISECONDS_PER_SEC = 1000;
-
 
 class Block {
     index;
@@ -37,17 +41,11 @@ class Block {
     }
 }
 
-// First block
-//TODO: Change this hash
-const genesisHash = "9100eb27c7ad31ef4456ee5daec500d3a42f21bfadd26a2e57e547d03b4ae392e2a70a1c864bb7764648155a2a15b382"
-
-const genesisBlock = new Block(0, genesisHash, '', 1618415210, genesisTransaction, 0, 0);
-
 /**
  * First transaction ---> coinbase transaction
  */
- const genesisTransaction = {
-    'txIns': [{'signature': '', 'txOutId': '', 'txOutIndex': 0}],
+const genesisTransaction = {
+    'txIns': [{ 'signature': '', 'txOutId': '', 'txOutIndex': 0 }],
     'txOuts': [{
         'address': '04bfcab8722991ae774db48f934ca79cfb7dd991229153b9f732ba5334aafcd8e7266e47076996b55a14bf9913ee3145ce0cfc1372ada8ada74bd287450313534a',
         'amount': 50
@@ -55,24 +53,23 @@ const genesisBlock = new Block(0, genesisHash, '', 1618415210, genesisTransactio
     'id': 'e655f6a5f26dc9b4cac6e46f52336428287759cf81ef5ff10854f69d68f43fa3'
 };
 
-
-// ! Number of seconds of 1 block will be generated
-const BLOCK_GENERATION_INTERVAL_IN_SEC = 10;
-
-// ! Number of blocks that after that number, the difficulty will increase/decrease
-const DIFFICULTY_ADJUSTMENT_INTERVAL = 10;
+// First block
+const genesisBlock = new Block(
+    0, '91a73664bc84c0baa1fc75ea6e4aa6d1d20c5df664c724e3159aefc2e1186627', '', 1465154705, [genesisTransaction], 0, 0
+);
 
 /**
  * The blockchain - main data
  */
-let blockchain = [genesisBlock];
+var blockchain = [genesisBlock];
+
 
 const getBlockchain = () => {
     return blockchain;
 }
 
 /**
- *  the unspent txOut of genesis block is set to unspentTxOuts on startup
+ *  ! the unspent txOut of genesis block is set to unspentTxOuts on startup
  *  */
 let unspentTxOuts = processTransactions(blockchain[0].data, [], 0);
 
@@ -83,25 +80,54 @@ let unspentTxOuts = processTransactions(blockchain[0].data, [], 0);
 const getUnspentTxOuts = () => _.cloneDeep(unspentTxOuts);
 
 /**
- * Setter for unspentTxOuts property
- * @param {UnspentTxOut[]} newUnspentTxOut 
- */
+* Setter for unspentTxOuts property
+* @param {UnspentTxOut[]} newUnspentTxOut 
+*/
 const setUnspentTxOuts = (newUnspentTxOut) => {
     console.log('Replacing unspentTxouts with: %s', newUnspentTxOut);
     unspentTxOuts = newUnspentTxOut;
 }
-
-
-
-
 
 /**
  * Get the current latest block in the blockchain
  * @returns the latest block in the blockchain
  */
 const getLatestBlock = () => {
+    console.log("getLatestBlock()");
     return blockchain[blockchain.length - 1];
 }
+
+/**
+ * Check if the block is valid, then process transaction push the block to the blockchain as
+ * long as 
+ * @param {Block} newBlock the block will be added 
+ * @returns 
+ */
+const addBlockToChain = (newBlock) => {
+    console.log("addBlockToChain()");
+    if (isNewBlockValid(newBlock, getLatestBlock())) {
+        const returnValue = processTransactions(newBlock.data, getUnspentTxOuts(), newBlock.index);
+        if (returnValue === null) {
+            return false;
+        } else {
+            blockchain.push(newBlock);
+            setUnspentTxOuts(returnValue);
+            updateTransactionPool(unspentTxOuts);
+            return true;
+
+        }
+    }
+    return false;
+}
+
+// ! Number of seconds of 1 block will be generated
+const BLOCK_GENERATION_INTERVAL_IN_SEC = 10;
+
+// ! Number of blocks that after that number, the difficulty will increase/decrease
+const DIFFICULTY_ADJUSTMENT_INTERVAL = 10;
+
+
+
 /**
  * Get the current difficulty of the blockchain
  * @param {Block[]} aBlockchain 
@@ -162,7 +188,7 @@ const generateRawNextBlock = (blockData) => {
 
 }
 
-const generateNextBlock = (blockData) => {
+const generateNextBlock = () => {
     const coinbaseTx = getCoinbaseTransaction(getPublicFromWallet(), getLatestBlock().index + 1);
     const blockData = [coinbaseTx].concat(getTransactionPool());
     return generateRawNextBlock(blockData);
@@ -183,7 +209,7 @@ const getMyUnspentTransactionOutputs = () => {
  * @param {number} amount 
  * @returns a raw block with transaction
  */
-const generatenextBlockWithTransaction = (receiverAddress, amount) => {
+const generateNextBlockWithTransaction = (receiverAddress, amount) => {
     if (!isValidAddress(receiverAddress)) {
         throw Error('Invalid address');
     }
@@ -196,26 +222,17 @@ const generatenextBlockWithTransaction = (receiverAddress, amount) => {
     return generateRawNextBlock(blockData);
 };
 
-
-const generatenextBlockWithTransaction = (receiverAddress, amount) => {
-    if (!isValidAddress(receiverAddress)) {
-        throw Error('invalid address');
-    }
-    if (typeof amount !== 'number') {
-        throw Error('invalid amount');
-    }
-    const coinbaseTx = getCoinbaseTransaction(getPublicFromWallet(), getLatestBlock().index + 1);
-    const tx = createTransaction(receiverAddress, amount, getPrivateFromWallet(), unspentTxOuts);
-    const blockData = [coinbaseTx, tx];
-    return generateRawNextBlock(blockData);
-};
-
 const findBlock = (index, previousHash, timestamp, data, diff) => {
     let nonce = 0;
     while (true) {
+        console.log("Mining block: Nonce =  " + nonce);
         const hash = calculateHash(index, previousHash, timestamp, data, diff, nonce);
         if (isHashMatchesDifficulty(hash, diff)) {
-            return new Block(index, hash, previousHash, timestamp, data, diff, nonce);
+            console.log("Legit");
+            console.log("Hash: " + hash);
+            const newBlock = new Block(index, hash, previousHash, timestamp, data, diff, nonce);
+            console.log("new block created: " + JSON.stringify(newBlock));
+            return newBlock;
         }
         nonce++;
     }
@@ -244,31 +261,17 @@ const calculateHash = (index, previousHash, timestamp, data, diff, nonce) => {
 }
 
 const calculateHashBlock = (block) => {
-    return calculateHash(block.index, block.previousHash, block.timestamp, block.data);
+    // console.log("block.index: " + block.index);
+    // console.log("block.previousHash: " + block.previousHash);
+    // console.log("block.timestamp: " + block.timestamp);
+    // console.log("JSON.stringify(block.data): " + JSON.stringify(block.data));
+    // console.log("block.diff: " + block.diff);
+    // console.log("block.nonce: " + block.nonce);
+    return calculateHash(block.index, block.previousHash, block.timestamp, block.data, block.difficulty, block.nonce);
 }
 
 
-/**
- * Check if the block is valid, then process transaction push the block to the blockchain as
- * long as 
- * @param {Block} newBlock the block will be added 
- * @returns 
- */
-const addBlockToChain = (newBlock) => {
-    if (isValidNewBlock(newBlock, getLatestBlock())) {
-        const returnValue = processTransactions(newBlock.data, getUnspentTxOuts(), newBlock.index);
-        if (returnValue === null) {
-            return false;
-        } else {
-            blockchain.push(newBlock);
-            setUnspentTxOuts(returnValue);
-            updateTransactionPool(unspentTxOuts);
-            return true;
 
-        }
-    }
-    return false;
-}
 
 /**
  * Check valid structure of the block
@@ -280,7 +283,7 @@ const isBlockHasValidStructure = (block) => {
         && typeof block.hash === 'string'
         && typeof block.previousHash === 'string'
         && typeof block.timestamp === 'number'
-        && typeof block.data === 'string';
+        && typeof block.data === 'object';
 };
 
 /**
@@ -290,11 +293,12 @@ const isBlockHasValidStructure = (block) => {
  * @returns true if all conditions met
  */
 const isNewBlockValid = (newBlock, previousBlock) => {
+    console.log("newBlock = " + JSON.stringify(newBlock));
+
     if (!isBlockHasValidStructure(newBlock)) {
         console.log("New block: Invalid structure, newBlock = " + JSON.stringify(newBlock));
         return false;
     }
-
     if (previousBlock.index + 1 !== newBlock.index) {
         console.log('New block: Invalid index, newBlock = ' + JSON.stringify(newBlock));
         return false;
@@ -355,7 +359,11 @@ const isBlockHasValidHash = (block) => {
 }
 
 const isHashMatchesBlockContent = (block) => {
-    return calculateHashForBlock(block) === block.hash;
+    console.log("CalculateHashBlock()");
+    console.log("Block = " + JSON.stringify(block));
+    console.log("calculateHashBlock(block) = " + calculateHashBlock(block));
+    console.log("Block.hash = " + block.hash);
+    return calculateHashBlock(block) === block.hash;
 }
 
 const isHashMatchesDifficulty = (hashString, difficulty) => {
@@ -364,6 +372,26 @@ const isHashMatchesDifficulty = (hashString, difficulty) => {
 
     return binaryHash.startsWith(prefix);
 };
+
+const hexToBin = (s) => {
+    let ret = '';
+    const lookupTable = {
+        '0': '0000', '1': '0001', '2': '0010', '3': '0011', '4': '0100',
+        '5': '0101', '6': '0110', '7': '0111', '8': '1000', '9': '1001',
+        'a': '1010', 'b': '1011', 'c': '1100', 'd': '1101',
+        'e': '1110', 'f': '1111'
+    };
+    for (let i = 0; i < s.length; i = i + 1) {
+        if (lookupTable[s[i]]) {
+            ret += lookupTable[s[i]];
+        } else {
+            return null;
+        }
+    }
+    return ret;
+};
+
+
 
 /**
  * Check if the blockchain is valid
@@ -379,7 +407,7 @@ const isChainValid = (blockchainToValidate) => {
         return false;
     }
 
-    
+
     for (let i = 1; i < blockchainToValidate.length; i++) {
         if (!isNewBlockValid(blockchainToValidate[i], blockchainToValidate[i - 1])) {
             return false;
@@ -393,7 +421,7 @@ const isChainValid = (blockchainToValidate) => {
  * @param {Block[]} newBlocks 
  */
 const replaceChain = (newBlocks) => {
-    const aUnspentTxOuts = isValidChain(newBlocks);
+    const aUnspentTxOuts = isChainValid(newBlocks);
 
     if (aUnspentTxOuts !== null &&
         getBlockchainAccumulatedDifficulty(newBlocks) > getBlockchainAccumulatedDifficulty(getBlockchain())) {
@@ -411,7 +439,308 @@ const handleReceivedTransaction = (transaction) => {
     addToTransactionPool(transaction, getUnspentTxOuts());
 }
 
+console.log("Blockchain.js");
+console.log(getBlockchain());
+
+//************************************************************************************************************** */
+
+/**
+ * @type {WebSocket[]}
+ * List of sockets
+ */
+const sockets = [];
+
+/**
+ * @type {Enumerator<number>}
+ * Enum of message type
+ */
+const MessageTypeEnum = {
+    QUERY_LATEST: 0,
+    QUERY_ALL: 1,
+    RESPONSE_BLOCKCHAIN: 2,
+    QUERY_TRANSACTION_POOL: 3,
+    RESPONSE_TRANSACTION_POOL: 4
+}
 
 
-module.exports = { Block, getBlockchain, isBlockValid: isNewBlockValid, isChainValid, addBlockToChain, generateNextBlock, getLatestBlock, replaceChain, isValidBlockStructure: isBlockHasValidStructure,
-generateRawNextBlock, handleReceivedTransaction, sendTransaction, getAccountBalance, generatenextBlockWithTransaction, getUnspentTxOuts, getMyUnspentTransactionOutputs }
+class Message {
+    /**
+     * @type {MessageTypeEnum}
+     */
+    type
+
+    /**
+     * @type {string}
+     */
+    data
+
+    constructor(type, data) {
+        this.type = type;
+        this.data = data;
+    }
+
+    /**
+     * Return a Message object
+     * @param {string} json 
+     * @returns Message object
+     */
+    static from(json) {
+        try {
+            return Object.assign(new Message(), json);
+        }
+        catch (e) {
+            console.log(e);
+            return null;
+        }
+    }
+}
+
+/**
+ * Init a P2P server
+ * @param {number} p2pPort 
+ */
+const initP2PServer = p2pPort => {
+    console.log("p2p port = " + p2pPort);
+    
+    const server = new WebSocket.Server({ port: p2pPort });
+    server.on('connection', ws => {
+        initConnection(ws);
+    });
+    console.log('App is listening websocket - P2P port on: ' + p2pPort);
+}
+
+const getSockets = () => {
+    return sockets;
+}
+
+const responseTransactionPoolMsg = () => ({
+    'type': MessageType.RESPONSE_TRANSACTION_POOL,
+    'data': JSON.stringify(getTransactionPool())
+});
+
+const queryTransactionPoolMsg = () => ({
+    'type': MessageType.QUERY_TRANSACTION_POOL,
+    'data': null
+});
+
+/**
+ * Init a connection with the given websocket
+ * @param {WebSocket} ws 
+ */
+const initConnection = ws => {
+    sockets.push(ws);
+    initMessageHandler(ws);
+    initErrorHandler(ws);
+    write(ws, queryChainLengthMsg());
+
+    setTimeout(() => {
+        broadcast(queryTransactionPoolMsg());
+    }, 500)
+}
+
+const JSONToObject = (data) => {
+    try {
+        return JSON.parse(data);
+    }
+    catch (e) {
+        console.log(e);
+        return null;
+    }
+}
+
+/**
+ * Init message handler, it will catch the message that websocket received
+ * @param {WebSocket} ws 
+ */
+const initMessageHandler = ws => {
+    ws.on('message', data => {
+        try {
+
+            const message = Message.from(data);
+
+            if (message === null) {
+                console.log('Unable to parse JSON message: ' + data);
+                return;
+            }
+
+            console.log('Received message: ' + JSON.stringify(message));
+
+            //For each message type, handle it
+            switch (message.type) {
+                case MessageTypeEnum.QUERY_LATEST:
+                    write(ws, responseLatestMessage());
+                    break;
+                case MessageTypeEnum.QUERY_ALL:
+                    write(ws, responseChainMessage());
+                    break;
+                case MessageTypeEnum.RESPONSE_BLOCKCHAIN:
+                    const receiveBlocks = JSONToObject(message.data);
+
+                    if (receiveBlocks === null) {
+                        console.log('Invalid blocks received: ');
+                        console.log(message.data);
+                        break;
+                    }
+
+                    // let receiveBlocks = [];
+                    // receiveBlocks.forEach((block) => {
+                    //     let newBlock = 
+                    //     receiveBlocks.push(newBlock);
+                    // })
+
+                    handleBlockchainResponse(receivedBlocks);
+                    break;
+                case MessageTypeEnum.QUERY_TRANSACTION_POOL:
+                    write(ws, responseTransactionPoolMsg());
+                    break;
+                case MessageTypeEnum.RESPONSE_TRANSACTION_POOL:
+                    const receivedTransactions = JSON.parse(message.data);
+                    if (receivedTransactions === null) {
+                        console.log('invalid transaction received: %s', JSON.stringify(message.data));
+                        break;
+                    }
+                    receivedTransactions.forEach((transaction) => {
+                        try {
+                            handleReceivedTransaction(transaction);
+                            // if no error is thrown, transaction was indeed added to the pool
+                            // let's broadcast transaction pool
+                            broadcastTransactionPool();
+                        } catch (e) {
+                            console.log(e.message);
+                        }
+                    });
+                    break;
+            }
+        }
+        catch (e) {
+            console.log(e);
+        }
+    })
+}
+/**
+ * The websocket send the message 
+ * @param {WebSocket} ws 
+ * @param {Message} message 
+ * @returns 
+ */
+const write = (ws, message) => ws.send(JSON.stringify(message));
+
+const broadcast = (message) => sockets.forEach(socket => write(socket, message));
+
+
+const queryChainLengthMsg = () => {
+    let data = {
+        'type': MessageTypeEnum.QUERY_LATEST,
+        'data': null
+    }
+
+    return Message.from(data);
+}
+
+const queryAllMessage = () => {
+    let data = {
+        'type': MessageTypeEnum.QUERY_ALL,
+        'data': null
+    }
+
+    return Message.from(data);
+}
+
+const responseChainMessage = () => {
+    let data = {
+        'type': MessageTypeEnum.RESPONSE_BLOCKCHAIN,
+        'data': JSON.stringify(getBlockchain())
+    }
+    return Message.from(data);
+
+}
+
+const responseLatestMessage = () => {
+    console.log("a = ")
+    let a = getBlockchain();
+    console.log("a = " + a);
+    // console.log("Blockchain = " + JSON.stringify(getBlockchain()));
+
+    let data = {
+        'type': MessageTypeEnum.QUERY_ALL,
+        'data': JSON.stringify([getLatestBlock()])
+    }
+    return Message.from(data);
+
+}
+/**
+ * Init a handler that will exec when catch errors
+ * @param {WebSocket} ws 
+ */
+const initErrorHandler = ws => {
+    const closeConnection = closingWebSocket => {
+        console.log('Connection failed to peer: ' + closingWebSocket.url);
+        sockets.splice(sockets.indexOf(closingWebSocket), 1);
+    }
+
+    ws.on('close', () => closeConnection(ws));
+    ws.on('error', () => closeConnection(ws));
+}
+
+/**
+ * Init handler that execute after receiving a blockchain
+ * @param {Block[]} receivedBlocks 
+ */
+const handleBlockchainResponse = receivedBlocks => {
+    if (receivedBlocks.length === 0) {
+        console.log('received block chain size of 0');
+        return;
+    }
+    const latestBlockReceived = receivedBlocks[receivedBlocks.length - 1];
+    if (!isValidBlockStructure(latestBlockReceived)) {
+        console.log('block structuture not valid');
+        return;
+    }
+
+    const latestBlockHeld = getLatestBlock();
+    if (latestBlockReceived.index > latestBlockHeld.index) {
+        console.log('blockchain possibly behind. We got: '
+            + latestBlockHeld.index + ' Peer got: ' + latestBlockReceived.index);
+        console.log('Prepare to add the block...');
+        if (latestBlockHeld.hash === latestBlockReceived.previousHash) {
+            if (addBlockToChain(latestBlockReceived)) {
+                broadcast(responseLatestMessage());
+            }
+        } else if (receivedBlocks.length === 1) {
+            console.log('We have to query the chain from our peer');
+            broadcast(queryAllMessage());
+        } else {
+            console.log('Received blockchain is longer than current blockchain, replacing...');
+            replaceChain(receivedBlocks);
+        }
+    } else {
+        console.log('received blockchain is not longer than received blockchain. Do nothing');
+    }
+};
+
+const broadcastTransactionPool = () => {
+    broadcast(responseTransactionPoolMsg());
+};
+
+const broadcastLatest = () => {
+    broadcast(responseLatestMessage());
+};
+/**
+ * Connect to a peer
+ * @param {string} newPeer 
+ */
+const connectToPeers = newPeer => {
+    const ws = new WebSocket(newPeer);
+    ws.on('open', () => {
+        initConnection(ws);
+    });
+    ws.on('error', () => {
+        console.log('connection failed');
+    });
+};
+
+module.exports = {
+    getBlockchain, isNewBlockValid, isChainValid, addBlockToChain, generateNextBlock, getLatestBlock, replaceChain, isBlockHasValidStructure,
+    generateRawNextBlock, handleReceivedTransaction, sendTransaction, getAccountBalance, generateNextBlockWithTransaction, getUnspentTxOuts, getMyUnspentTransactionOutputs,
+    connectToPeers, broadcastTransactionPool, broadcastLatest, initP2PServer, getSockets
+}

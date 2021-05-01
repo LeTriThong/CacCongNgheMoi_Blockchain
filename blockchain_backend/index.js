@@ -1,7 +1,6 @@
 const express = require('express');
 
-const { getBlockchain, generateNextBlock, getUnspentTxOuts, generatenextBlockWithTransaction, getMyUnspentTransactionOutputs, generateRawNextBlock } = require('./src/blockchain');
-const p2p = require('./src/p2p');
+const { getBlockchain, generateNextBlock, getUnspentTxOuts, generateNextBlockWithTransaction, getMyUnspentTransactionOutputs, generateRawNextBlock, getAccountBalance, getSockets, initP2PServer } = require('./src/blockchain');
 const { initWallet, getPublicFromWallet } = require('./src/wallet');
 const _ = require('lodash');
 const { getTransactionPool } = require('./src/transactionPool');
@@ -78,8 +77,13 @@ const initHttpServer = (httpPort) => {
      * Mine a new block
      */
     app.post('/mineBlock', (req, res) => {
-        const newBlock = generateNextBlock(req.body.data);
-        res.send(newBlock);
+        const newBlock = generateNextBlock();
+
+        if (newBlock === null) {
+            res.status(400).send('could not generate block');
+        } else {
+            res.send(newBlock);
+        }
     });
 
     /**
@@ -131,7 +135,7 @@ const initHttpServer = (httpPort) => {
         const address = req.body.address;
         const amount = req.body.amount;
         try {
-            const resp = generatenextBlockWithTransaction(address, amount);
+            const resp = generateNextBlockWithTransaction(address, amount);
             res.send(resp);
         } catch (e) {
             console.log(e.message);
@@ -171,7 +175,7 @@ const initHttpServer = (httpPort) => {
      * Get all p2p sockets
      */
     app.get('/peers', (req, res) => {
-        res.send(p2p.getSockets().map(s => s._socket.remoteAddress + ':' + s._socket.remotePort));
+        res.send(getSockets().map(s => s._socket.remoteAddress + ':' + s._socket.remotePort));
     });
 
     app.post('/addPeer', (req, res) => {
@@ -190,5 +194,5 @@ const initHttpServer = (httpPort) => {
 };
 
 initHttpServer(httpPort);
-p2p.initP2PServer(p2pPort);
+initP2PServer(p2pPort);
 initWallet();

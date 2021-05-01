@@ -1,5 +1,5 @@
 const _ = require('lodash');
-const {validateTransaction, Transaction} = require('./transaction');
+const {validateTransaction, Transaction, TxIn, UnspentTxOut} = require('./transaction');
 
 /**
  * @type {Transaction[]}
@@ -72,4 +72,4 @@ const isValidTxForPool = (tx, aTtransactionPool) => {
     return true;
 };
 
-export {addToTransactionPool, getTransactionPool, updateTransactionPool};
+module.exports = {addToTransactionPool, getTransactionPool, updateTransactionPool};
