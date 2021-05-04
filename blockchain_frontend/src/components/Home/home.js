@@ -1,5 +1,7 @@
 import React from 'react';
 import logo from '../../assets/short-hand-logo-web.png';
+import createWallet from '../../assets/create-wallet.png';
+import unlockWallet from '../../assets/unlock-wallet.png';
 import spaceman from '../../assets/big-spaceman.png';
 import '../../App.css'
 
@@ -26,48 +28,45 @@ const Home = (props) => {
                 </div>
             </div>
 
-            <div>
+            <div className="Home-menu">
+                <div className="Home-create-wallet">
+                    <div className="Home-menu-image-container">
+                        <img className="Home-menu-image" src={createWallet} ></img>
+                    </div>
+                    <div className="Home-menu-text-container">
+                        <div>
+                            <label className="Home-menu-title">Create a new wallet</label>
+                        </div>
+                        <div>
+                            <label className="Home-menu-content">Generate and create your own wallet. Receive a public address, enter private key to access</label>
+                        </div>
+                        <div>
+                            <label className="Home-menu-getStarted">Get started &#8594;</label>
+                        </div>
+                    </div>
+                </div>
 
-            <div>
-                <div>
-                    <label>Create a new wallet</label>
-                </div>
-                <div>
-                    <label>Generate and create your own wallet. Receive a public address, enter private key to access</label>
-                </div>
-                <div>
-                    <label>Get started</label>
+                <div className="Home-access-wallet">
+                    <div className="Home-menu-image-container">
+                        <img className="Home-menu-image" src={unlockWallet} ></img>
+                    </div>
+                    <div className="Home-menu-text-container">
+                        <div>
+                            <label className="Home-menu-title">Access my wallet</label>
+                        </div>
+                        <div>
+                            <label className="Home-menu-content">Connect to the blockchain using the wallet. Send & receive coins, see transaction history, mining coins</label>
+                        </div>
+                        <div>
+                            <label className="Home-menu-getStarted">Get started &#8594;</label>
+                        </div>
+                    </div>
+
                 </div>
             </div>
 
-            <div>
-                <div>
-                    <label>Access my wallet</label>
-                </div>
-                <div>
-                    <label>Connect to the blockchain using the wallet</label>
-                </div>
-                <div>
-                    <ul>
-                        <li>Send & receive coins</li>
-                        <li>Mining coins</li>
-                        <li>See transaction history</li>
-                    </ul>
-                </div>
-                <div>
-                    <label>Get started</label>
-                </div>
-            </div>
-            </div>
 
-
-            <div className="A">
-                <div className="B">
-
-                </div>
-
-                <div className="C"></div>
-            </div>
+           
 
 
 

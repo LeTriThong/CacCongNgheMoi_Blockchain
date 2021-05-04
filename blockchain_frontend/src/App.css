@@ -38,7 +38,7 @@
 }
 
 .Home {
-  background-color: chocolate;
+  background-color: white;
   margin-top: 1%;
   margin-bottom: 1%;
   margin-left: 5%;
@@ -108,3 +108,72 @@
   height: 150px;
   flex: 1
 }
+
+.Home-menu {
+  display: flex;
+  flex-direction: row;
+
+}
+
+.Home-create-wallet {
+  display: flex;
+  background-color: #5A78F0;
+  border-radius: 3%;
+  flex: 1;
+  margin: 5%;
+  height: 350px;
+
+}
+
+.Home-access-wallet {
+  display: flex;
+  background-color: #05C0A5;
+  border-radius: 3%;
+  flex: 1;
+  margin: 5%;
+  padding-right: 20px;
+}
+
+.Home-menu-title {
+  color: white;
+  font-size:x-large;
+  font-family: 'Gill Sans', 'Gill Sans MT', Calibri, 'Trebuchet MS', sans-serif;
+  margin-top: 5%;
+  font-weight: bold;
+}
+
+.Home-menu-content {
+  color: white;
+  font-size: large;
+  font-family: 'Gill Sans', 'Gill Sans MT', Calibri, 'Trebuchet MS', sans-serif;
+  
+}
+
+.Home-menu-getStarted {
+  color: white;
+  font-size: large;
+  font-family: 'Gill Sans', 'Gill Sans MT', Calibri, 'Trebuchet MS', sans-serif;
+
+  
+}
+
+.Home-menu-image {
+    width: 100px;
+    height: 100px;
+}
+
+.Home-menu-image-container {
+  display: flex;
+  flex: 1;
+  justify-content: center;
+  align-items: center;
+ 
+}
+
+.Home-menu-text-container {
+  display: flex;
+  flex: 2;
+  flex-direction: column;
+  justify-content: space-around;
+}
+
