@@ -177,3 +177,36 @@
   justify-content: space-around;
 }
 
+.Login-container {
+  display: flex;
+  padding: 5%;
+  
+}
+
+.Login-title {
+  display: flex;
+  color: aquamarine;
+  font-size: x-large;
+  font-family: 'Gill Sans', 'Gill Sans MT', Calibri, 'Trebuchet MS', sans-serif;
+}
+
+.Login-info {
+  display: flex;
+  color: black;
+  font-size: medium;
+  font-family: 'Gill Sans', 'Gill Sans MT', Calibri, 'Trebuchet MS', sans-serif;
+}
+
+.Login-textinput {
+  width: 300px;
+  font-size: medium;
+}
+
+.Login-confirm {
+  width: 80px;
+  height: 40px;
+  font-size: medium;
+  font-family: 'Gill Sans', 'Gill Sans MT', Calibri, 'Trebuchet MS', sans-serif;
+  color: white;
+  background-color: aquamarine;
+}
