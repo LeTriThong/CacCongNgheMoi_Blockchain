@@ -1,37 +1,26 @@
 import React, { useEffect, useState } from 'react';
 import logo from '../../assets/short-hand-logo-web.png';
 import spaceman from '../../assets/big-spaceman.png';
+import {ec} from 'elliptic';
 
 
 import '../../App.css'
 
 
-const Login = (props) => {
-    console.log("abcd")
+const Register = (props) => {
     const [privateKey, setPrivateKey] = useState("asdada");
-    const [textLength, setTextLength] = useState(0);
-
-    // const setupText = (t) => {
-    //     console.log(t);
-    //     setText(t.target.value);
-
-    //     console.log(text);
-    //     // console.log(textLength);
-    //     // console.log(1);
-    // }
-
-    const setup = (t) => {
-        setPrivateKey(t);
-        console.log(t);
-    }
 
     useEffect(() => {
+        const EC = new ec('secp256k1');
+        const keyPair = EC.genKeyPair();
+        setPrivateKey(keyPair.getPrivate());
+    },[]);
 
-    }, [])
 
-    const onLogin = () => {
-        // setTextLength(textLength + 1);
-        // console.log(textLength)
+
+
+    const directToMain = () => {
+        
     }
 
     return (
@@ -40,22 +29,21 @@ const Login = (props) => {
                 <div style={{ flexDirection: 'row', marginBottom: '50px' }}>
                     <img className="Home-logo-image" src={logo} alt="logo"></img>
                 </div>
-
                 <div className="Home-intro">
                     <div className="Login-container">
                         <div >
-                            <label className="Login-title">Access my wallet</label>
-                            {/* <label className="Login-title">{privateKey}</label> */}
-
+                            <label className="Login-title">Register my wallet</label>
                         </div>
                         <div>
-                            <label className="Login-info">Enter your private key</label>
+                            <label className="Login-info">Copy this private key, this is your access to the wallet</label>
+                            <label className="Login-info">Keep this carefully beacuse this cannot be retrieved</label>
                         </div>
                         <div>
-                            <input className="Login-textinput" value={privateKey} type="text" maxLength={32} onChange={(e) => setup(e.target.value)} />
+                            <input className="Login-textinput" value={privateKey} type="text" 
+                            maxLength={32} readOnly />
                         </div>
                         <div>
-                            <button className="Login-confirm" onClick={onLogin}>Sign in</button>
+                            <button className="Login-confirm" onClick={directToMain}>Access your wallet</button>
                         </div>
                     </div>
                     <div className="Home-intro-image">
@@ -68,4 +56,4 @@ const Login = (props) => {
     )
 }
 
-export default Login;
+export default Register;

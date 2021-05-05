@@ -31,7 +31,7 @@ const Home = (props) => {
             <div className="Home-menu">
                 <div className="Home-create-wallet">
                     <div className="Home-menu-image-container">
-                        <img className="Home-menu-image" src={createWallet} ></img>
+                        <img className="Home-menu-image" src={createWallet} alt="" ></img>
                     </div>
                     <div className="Home-menu-text-container">
                         <div>
@@ -48,7 +48,7 @@ const Home = (props) => {
 
                 <div className="Home-access-wallet">
                     <div className="Home-menu-image-container">
-                        <img className="Home-menu-image" src={unlockWallet} ></img>
+                        <img className="Home-menu-image" src={unlockWallet} alt =""></img>
                     </div>
                     <div className="Home-menu-text-container">
                         <div>
