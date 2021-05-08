@@ -1,12 +1,16 @@
 import React from 'react';
+import { BrowserRouter as Router, Switch, Route, Link, useRouteMatch } from "react-router-dom";
 import logo from '../../assets/short-hand-logo-web.png';
 import createWallet from '../../assets/create-wallet.png';
 import unlockWallet from '../../assets/unlock-wallet.png';
 import spaceman from '../../assets/big-spaceman.png';
 import '../../App.css'
+import Login from '../Login/login';
 
 
 const Home = (props) => {
+
+    
     return (
         <div className="Home">
             <div style={{ flexDirection: 'row', marginBottom: '50px' }}>
@@ -46,27 +50,27 @@ const Home = (props) => {
                     </div>
                 </div>
 
-                <div className="Home-access-wallet">
-                    <div className="Home-menu-image-container">
-                        <img className="Home-menu-image" src={unlockWallet} alt =""></img>
-                    </div>
-                    <div className="Home-menu-text-container">
-                        <div>
-                            <label className="Home-menu-title">Access my wallet</label>
+                    <div className="Home-access-wallet">
+                        <div className="Home-menu-image-container">
+                            <img className="Home-menu-image" src={unlockWallet} alt=""></img>
                         </div>
-                        <div>
-                            <label className="Home-menu-content">Connect to the blockchain using the wallet. Send & receive coins, see transaction history, mining coins</label>
-                        </div>
-                        <div>
-                            <label className="Home-menu-getStarted">Get started &#8594;</label>
+                        <div className="Home-menu-text-container">
+                            <div>
+                                <label className="Home-menu-title">Access my wallet</label>
+                            </div>
+                            <div>
+                                <label className="Home-menu-content">Connect to the blockchain using the wallet. Send & receive coins, see transaction history, mining coins</label>
+                            </div>
+                            <div>
+                                <Link to="/login" className="Home-menu-getStarted">Get started &#8594;</Link>
+                            </div>
                         </div>
                     </div>
 
-                </div>
             </div>
 
 
-           
+
 
 
 
