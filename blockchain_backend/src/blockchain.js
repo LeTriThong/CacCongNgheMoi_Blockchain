@@ -1,5 +1,6 @@
 const CryptoJS = require('crypto-js');
-const WebSocket = require('ws');
+// const { Server } = require('http');
+// const WebSocket = require('ws');
 
 const _ = require('lodash');
 // const { Block, blockchain, getBlockchain } = require('./blockchainCore');
@@ -8,6 +9,15 @@ const { processTransactions, getCoinbaseTransaction, UnspentTxOut } = require('.
 const { addToTransactionPool, getTransactionPool, updateTransactionPool } = require('./transactionPool');
 // const { isHashMatchesDifficulty } = require('./util');
 const { getPublicFromWallet, createTransaction, getPrivateFromWallet, getBalance } = require('./wallet');
+const http = require('http').createServer();
+const io = require('socket.io')(http, {
+    cors: { origin: "*"}
+})
+
+const {Server} = require('socket.io');
+
+
+
 const MILLISECONDS_PER_SEC = 1000;
 
 class Block {
@@ -502,11 +512,13 @@ class Message {
 const initP2PServer = p2pPort => {
     console.log("p2p port = " + p2pPort);
     
-    const server = new WebSocket.Server({ port: p2pPort });
-    server.on('connection', ws => {
-        initConnection(ws);
+    // const server = new WebSocket.Server({ port: p2pPort, cors:"*" });
+    io.on('connection', socket => {
+        console.log("Connecting");  
+        initConnection(socket);
     });
-    console.log('App is listening websocket - P2P port on: ' + p2pPort);
+    http.listen(p2pPort, () => console.log('App is listening websocket - P2P port on: ' + p2pPort));
+    
 }
 
 const getSockets = () => {
@@ -514,12 +526,12 @@ const getSockets = () => {
 }
 
 const responseTransactionPoolMsg = () => ({
-    'type': MessageType.RESPONSE_TRANSACTION_POOL,
+    'type': MessageTypeEnum.RESPONSE_TRANSACTION_POOL,
     'data': JSON.stringify(getTransactionPool())
 });
 
 const queryTransactionPoolMsg = () => ({
-    'type': MessageType.QUERY_TRANSACTION_POOL,
+    'type': MessageTypeEnum.QUERY_TRANSACTION_POOL,
     'data': null
 });
 
@@ -528,6 +540,7 @@ const queryTransactionPoolMsg = () => ({
  * @param {WebSocket} ws 
  */
 const initConnection = ws => {
+    console.log("Init connection");
     sockets.push(ws);
     initMessageHandler(ws);
     initErrorHandler(ws);
@@ -611,6 +624,16 @@ const initMessageHandler = ws => {
                     });
                     break;
             }
+        }
+        catch (e) {
+            console.log(e);
+        }
+    })
+
+    ws.on('yasuo', data => {
+        try {
+            console.log("abc");
+            ws.emit('yasuo', "aaaaaa")
         }
         catch (e) {
             console.log(e);
@@ -730,11 +753,13 @@ const broadcastLatest = () => {
  * @param {string} newPeer 
  */
 const connectToPeers = newPeer => {
-    const ws = new WebSocket(newPeer);
-    ws.on('open', () => {
+    // const ws = new WebSocket(newPeer);
+    const newSocket = new Server();
+
+    newSocket.on('open', () => {
         initConnection(ws);
     });
-    ws.on('error', () => {
+    newSocket.on('error', () => {
         console.log('connection failed');
     });
 };

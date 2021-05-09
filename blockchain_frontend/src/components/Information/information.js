@@ -1,39 +1,57 @@
 import React, { useEffect, useState } from 'react';
 import logo from '../../assets/short-hand-logo-web.png';
-import spaceman from '../../assets/big-spaceman.png';
 import account from '../../assets/account.svg';
 import network from '../../assets/network.svg';
 import wallet from '../../assets/wallet.svg';
+import Axios from 'axios'
 
 import '../../App.css'
+import { io } from "socket.io-client"
+const ENDPOINT = "http://localhost:6001"
+const SERVER_ENDPOINT = "http://localhost:3001"
 
 
 const Information = (props) => {
     console.log("abcd")
-    const [privateKey, setPrivateKey] = useState("asdada");
+    // const [privateKey, setPrivateKey] = useState("asdada");
+    const [address, setAddress] = useState("qwer");
+    const [coin, setCoin] = useState(-5);
 
-    // const setupText = (t) => {
+    // const setup = (t) => {
+    //     setPrivateKey(t);
     //     console.log(t);
-    //     setText(t.target.value);
-
-    //     console.log(text);
-    //     // console.log(textLength);
-    //     // console.log(1);
     // }
 
-    const setup = (t) => {
-        setPrivateKey(t);
-        console.log(t);
-    }
-
     useEffect(() => {
+        const socket = io(ENDPOINT);
+        console.log("abcde")
+        socket.on('yasuo', text => {
+            console.log(text);
+            setAddress(text);
+        });
+        socket.emit('yasuo', "alo");
+
+
+        Axios.get(SERVER_ENDPOINT + '/balance')
+            .then((response) => {
+                // console.log(JSON.stringify(response))
+                setCoin(response.data.balance);
+            })
+            .catch(error => {
+                console.log(error);
+            });
+
+        
+
 
     }, [])
 
-    const onLogin = () => {
-        // setTextLength(textLength + 1);
-        // console.log(textLength)
-    }
+
+
+    // const onLogin = () => {
+    //     // setTextLength(textLength + 1);
+    //     // console.log(textLength)
+    // }
 
     return (
 
@@ -50,7 +68,7 @@ const Information = (props) => {
                         </div>
                         <div className="Info-card-text">
                             <div className="Info-card-title">
-                                <label className="Info-card-title">Address</label>
+                                <label className="Info-card-title">{address}</label>
                             </div>
                             <div className="Info-card-content">
                                 <label className="Info-card-content">88888888888888888888888888888888</label>
@@ -72,7 +90,7 @@ const Information = (props) => {
 
                             </div>
                             <div className="Info-card-content">
-                                <label className="Info-card-content">0 MC</label>
+                                <label className="Info-card-content">{coin} MC</label>
 
                             </div>
                         </div>
@@ -100,7 +118,7 @@ const Information = (props) => {
                     <label className="Info-send-transaction">Send transaction</label>
                 </div>
                 <div style={{ display: 'flex' }}>
-                    <div style={{ display: 'flex', flex: 2, flexDirection:'column' }}>
+                    <div style={{ display: 'flex', flex: 2, flexDirection: 'column' }}>
 
 
 

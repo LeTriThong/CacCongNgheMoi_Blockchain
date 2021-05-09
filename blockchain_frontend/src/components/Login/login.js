@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import logo from '../../assets/short-hand-logo-web.png';
 import spaceman from '../../assets/big-spaceman.png';
-import { BrowserRouter as Router, Switch, Route, Link, Redirect, useHistory } from "react-router-dom";
+import { useHistory } from "react-router-dom";
 
 
 import '../../App.css'
@@ -10,8 +10,6 @@ import '../../App.css'
 const Login = (props) => {
     const history = useHistory();
     const [privateKey, setPrivateKey] = useState("asdada");
-    const [textLength, setTextLength] = useState(0);
-
     // const setupText = (t) => {
     //     console.log(t);
     //     setText(t.target.value);
@@ -39,7 +37,6 @@ const Login = (props) => {
             history.push(`/info`);
         }
         console.log("OK");
-
     }
 
     return (

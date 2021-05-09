@@ -4,12 +4,15 @@ const { getBlockchain, generateNextBlock, getUnspentTxOuts, generateNextBlockWit
 const { initWallet, getPublicFromWallet } = require('./src/wallet');
 const _ = require('lodash');
 const { getTransactionPool } = require('./src/transactionPool');
+const cors = require('cors');
+
 
 const httpPort = 3001;
 const p2pPort = 6001;
 
 const initHttpServer = (httpPort) => {
     const app = express();
+    app.use(cors());
 
     app.use((error, req, res, next) => {
         res.status(400).send(error.message);

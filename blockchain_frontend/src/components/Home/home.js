@@ -1,11 +1,11 @@
 import React from 'react';
-import { BrowserRouter as Router, Switch, Route, Link, useRouteMatch } from "react-router-dom";
+import { Link } from "react-router-dom";
 import logo from '../../assets/short-hand-logo-web.png';
 import createWallet from '../../assets/create-wallet.png';
 import unlockWallet from '../../assets/unlock-wallet.png';
 import spaceman from '../../assets/big-spaceman.png';
 import '../../App.css'
-import Login from '../Login/login';
+
 
 
 const Home = (props) => {
