@@ -1,14 +1,17 @@
+const dotenv = require('dotenv').config();
 const express = require('express');
 // const bodyParser = require('body-parser')
-const { getBlockchain, generateNextBlock, getUnspentTxOuts, generateNextBlockWithTransaction, getMyUnspentTransactionOutputs, generateRawNextBlock, getAccountBalance, getSockets, initP2PServer, connectToPeers, getSenderSockets } = require('./src/blockchain');
+const { getBlockchain, generateNextBlock, getUnspentTxOuts, generateNextBlockWithTransaction, getMyUnspentTransactionOutputs, generateRawNextBlock, getAccountBalance, getSockets, initP2PServer, connectToPeers, getSenderSockets, initUISocketServer } = require('./src/blockchain');
 const { initWallet, getPublicFromWallet } = require('./src/wallet');
 const _ = require('lodash');
 const { getTransactionPool } = require('./src/transactionPool');
 const cors = require('cors');
+const { io } = require('socket.io-client');
 
 
-const httpPort = 3001;
-const p2pPort = 6001;
+const httpPort = process.env.HTTP_PORT;
+const p2pPort = process.env.P2P_PORT;
+const uiSocketPort = process.env.UI_SOCKET_PORT;
 
 const initHttpServer = (httpPort) => {
     const app = express();
@@ -207,6 +210,10 @@ const initHttpServer = (httpPort) => {
     });
 };
 
+
+
 initHttpServer(httpPort);
 initP2PServer(p2pPort);
+initUISocketServer(uiSocketPort);
+
 initWallet();

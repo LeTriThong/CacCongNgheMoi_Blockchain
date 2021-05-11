@@ -7,9 +7,10 @@ import Axios from 'axios'
 
 import '../../App.css'
 import { io } from "socket.io-client"
-const ENDPOINT = "http://localhost:6001"
-const SERVER_ENDPOINT = "http://localhost:3001"
-const SUPER_NODE_ENDPOINT = "http://localhost:3001"
+const ENDPOINT = "http://localhost:" + process.env.REACT_APP_P2P_PORT;
+const SERVER_ENDPOINT = "http://localhost:" + process.env.REACT_APP_HTTP_PORT;
+const SUPER_NODE_ENDPOINT = "http://localhost:" + process.env.REACT_APP_SUPER_NODE_PORT;
+const UI_SOCKET_ENDPOINT = "http://localhost:" + process.env.REACT_APP_UI_SOCKET_PORT;
 
 
 const Information = (props) => {
@@ -18,7 +19,8 @@ const Information = (props) => {
         QUERY_ALL: 1,
         RESPONSE_BLOCKCHAIN: 2,
         QUERY_TRANSACTION_POOL: 3,
-        RESPONSE_TRANSACTION_POOL: 4
+        RESPONSE_TRANSACTION_POOL: 4,
+        CREATE_CONNECTION: 5
     }
 
 
@@ -28,6 +30,7 @@ const Information = (props) => {
     const [coin, setCoin] = useState(-5);
     const [transactionPool, setTransactionPool] = useState([]);
     const [blockchain, setBlockchain] = useState([]);
+    const [socket, setSocket] = useState();
 
     // const setup = (t) => {
     //     setPrivateKey(t);
@@ -48,10 +51,14 @@ const Information = (props) => {
         //     }
         // })
 
-        
-        init();
-
-
+        const newSocket = io(UI_SOCKET_ENDPOINT);
+        newSocket.on('message', data => {
+            console.log(data);
+            // setSocket(socket.push(data));
+            // setBlockchain(blockchain.push(data))
+            
+            getBlockchain();
+        })
 
         // console.log()
 
@@ -70,21 +77,23 @@ const Information = (props) => {
         // .catch(error => {
         //     console.log(error);
         // });
-        
+        const init = async () => {
+            await getBalance();
+            await getAddress();
+            await getTransactionPool();
+            await getBlockchain();
+            await getPeer();
+            await addPeer();
+            
+        }
+
+        init();
 
 
 
     }, [])
 
-    const init = async () => {
-        await getBalance();
-        await getAddress();
-        await getTransactionPool();
-        await getBlockchain();
-        await getPeer();
-        await addPeer();
-        
-    }
+    
 
     const addPeer = async () => {
         if (SERVER_ENDPOINT === SUPER_NODE_ENDPOINT) {
@@ -93,7 +102,7 @@ const Information = (props) => {
         }
 
         await Axios.post(SUPER_NODE_ENDPOINT + '/addPeer', {
-            peer: 6001
+            peer: process.env.REACT_APP_P2P_PORT
         })
         .then(res => {
             if (res.status === 200) {

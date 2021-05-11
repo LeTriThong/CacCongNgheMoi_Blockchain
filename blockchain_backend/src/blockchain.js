@@ -18,7 +18,10 @@ const io = require('socket.io')(http, {
 
 const ioClient = require('socket.io-client');
 
-
+const http1 = require('http').createServer();
+const uiSocketServer = require('socket.io')(http1, {
+    cors: {origin: "*"}
+})
 
 
 
@@ -244,10 +247,10 @@ const findBlock = (index, previousHash, timestamp, data, diff) => {
         console.log("Mining block: Nonce =  " + nonce);
         const hash = calculateHash(index, previousHash, timestamp, data, diff, nonce);
         if (isHashMatchesDifficulty(hash, diff)) {
-            console.log("Legit");
-            console.log("Hash: " + hash);
+            // console.log("Legit");
+            // console.log("Hash: " + hash);
             const newBlock = new Block(index, hash, previousHash, timestamp, data, diff, nonce);
-            console.log("new block created: " + JSON.stringify(newBlock));
+            // console.log("new block created: " + JSON.stringify(newBlock));
             return newBlock;
         }
         nonce++;
@@ -375,10 +378,10 @@ const isBlockHasValidHash = (block) => {
 }
 
 const isHashMatchesBlockContent = (block) => {
-    console.log("CalculateHashBlock()");
-    console.log("Block = " + JSON.stringify(block));
-    console.log("calculateHashBlock(block) = " + calculateHashBlock(block));
-    console.log("Block.hash = " + block.hash);
+    // console.log("CalculateHashBlock()");
+    console.log("Block = " + block);
+    // console.log("calculateHashBlock(block) = " + calculateHashBlock(block));
+    // console.log("Block.hash = " + block.hash);
     return calculateHashBlock(block) === block.hash;
 }
 
@@ -532,6 +535,15 @@ const initP2PServer = p2pPort => {
 
 }
 
+const initUISocketServer = uiSocketPort => {
+    console.log("ui socket port = " + uiSocketPort);
+    uiSocketServer.on('connection', socket => {
+        console.log("A client UI has accessed to this UI socket!!!!");
+    });
+
+    http1.listen(uiSocketPort, () => console.log('App is listening UI socket port on: ' + uiSocketPort));
+}
+
 const getSockets = () => {
     return sockets;
 }
@@ -563,12 +575,12 @@ const initConnection = ws => {
     else {
         console.log("No ")
     }
-    console.log(ws);
+    // console.log(ws);
     console.log("Sockets length: " + sockets.length);
 
     initMessageHandler(ws);
     initErrorHandler(ws);
-    write(ws, queryChainLengthMsg());
+    // write(ws, queryChainLengthMsg());
 
     setTimeout(() => {
         broadcast(queryTransactionPoolMsg());
@@ -592,22 +604,31 @@ const JSONToObject = (data) => {
 const initMessageHandler = ws => {
     ws.on('message', data => {
         try {
-            const message = Message.from(data);
+            // const message = Message.from(data);
 
             // if (message === null) {
             // console.log('Unable to parse JSON message: ' + data);
             // return;
             // }
 
-            console.log('Received message: ' + message);
+            console.log('Received message: ' + data);
+            let message = JSONToObject(data);
+            message.data = JSONToObject(message.data);
+            console.log(message.type);
+            console.log(message.data);
+
 
             //For each message type, handle it
             switch (message.type) {
                 case MessageTypeEnum.QUERY_LATEST:
+                    console.log("QUERY_LATEST");
                     write(ws, responseLatestMessage());
                     break;
                 case MessageTypeEnum.QUERY_ALL:
+                    console.log("QUERY_ALL")
+                    blockchain.push(...message.data);
                     write(ws, responseChainMessage());
+                    uiSocketServer.send(message.data);
                     break;
                 case MessageTypeEnum.RESPONSE_BLOCKCHAIN:
                     const receiveBlocks = JSONToObject(message.data);
@@ -647,8 +668,10 @@ const initMessageHandler = ws => {
                     });
                     break;
                 case MessageTypeEnum.CREATE_CONNECTION:
+                    console.log(message.port);
                     const newSocket = ioClient("http://localhost:" + message.port);
                     senderSockets.push(newSocket);
+                    write(newSocket, queryChainLengthMsg());
                     break;
             }
         }
@@ -675,16 +698,17 @@ const initMessageHandler = ws => {
  */
 const write = (ws, message) => ws.send(JSON.stringify(message));
 
-const broadcast = (message) => sockets.forEach(socket => write(socket, message));
+const broadcast = (message) => senderSockets.forEach(socket => write(socket, message));
 
 
 const queryChainLengthMsg = () => {
+    console.log("Query chain length msg");
     let data = {
         'type': MessageTypeEnum.QUERY_LATEST,
         'data': null
     }
 
-    return Message.from(data);
+    return data;
 }
 
 const queryAllMessage = () => {
@@ -693,7 +717,7 @@ const queryAllMessage = () => {
         'data': null
     }
 
-    return Message.from(data);
+    return data;
 }
 
 const responseChainMessage = () => {
@@ -701,7 +725,7 @@ const responseChainMessage = () => {
         'type': MessageTypeEnum.RESPONSE_BLOCKCHAIN,
         'data': JSON.stringify(getBlockchain())
     }
-    return Message.from(data);
+    return data;
 
 }
 
@@ -715,7 +739,7 @@ const responseLatestMessage = () => {
         'type': MessageTypeEnum.QUERY_ALL,
         'data': JSON.stringify([getLatestBlock()])
     }
-    return Message.from(data);
+    return data;
 
 }
 /**
@@ -773,6 +797,7 @@ const broadcastTransactionPool = () => {
 };
 
 const broadcastLatest = () => {
+    console.log("Broadcast latest")
     broadcast(responseLatestMessage());
 };
 /**
@@ -787,14 +812,45 @@ const connectToPeers = newPeer => {
     })
 
     //* Khi tạo socket tới địa chỉ p2p newPeer, bên newPeer tạo 1 socket, ra lệnh 
-    //* tạo 1 socket receiver, aka kết nối hai chiều
+    //* tạo 1 socket receiver --> kết nối hai chiều
     const newSocket = ioClient("http://localhost:" + newPeer);
-    newSocket.on('open', () => {
-        initConnection(newSocket);
-    });
-    newSocket.on('error', () => {
-        console.log('connection failed');
-    });
+    // newSocket.on('open', () => {
+    //     initConnection(newSocket);
+    // });
+    // newSocket.on('error', () => {
+    //     console.log('connection failed');
+    // });
+
+    newSocket.on('message', data => {
+        console.log("Data = " + data);
+        let p = JSONToObject(data);
+        let pData = JSONToObject(p.data);
+        console.log(pData);
+        console.log("abc");
+        switch (p.type) {
+            case MessageTypeEnum.QUERY_LATEST:
+                console.log("a1");
+                break;
+            case MessageTypeEnum.QUERY_ALL:
+                console.log("a2");
+                blockchain.push(pData);
+                uiSocketServer.send(pData);
+                break;
+            case MessageTypeEnum.RESPONSE_BLOCKCHAIN:
+                console.log("a3");
+                
+                break;
+            case MessageTypeEnum.QUERY_TRANSACTION_POOL:
+                console.log("a4");
+               
+                break;
+            case MessageTypeEnum.RESPONSE_TRANSACTION_POOL:
+                console.log("a5");
+                
+                break;   
+        }
+        
+    })
 
 
     console.log("New socket created, prepare for init connection")
@@ -802,7 +858,7 @@ const connectToPeers = newPeer => {
 
     newSocket.send({
         type: MessageTypeEnum.CREATE_CONNECTION,
-        port: 6001
+        port: process.env.P2P_PORT
     });
 
     // console.log(newSocket.io.uri);
@@ -816,5 +872,5 @@ const connectToPeers = newPeer => {
 module.exports = {
     getBlockchain, isNewBlockValid, isChainValid, addBlockToChain, generateNextBlock, getLatestBlock, replaceChain, isBlockHasValidStructure,
     generateRawNextBlock, handleReceivedTransaction, sendTransaction, getAccountBalance, generateNextBlockWithTransaction, getUnspentTxOuts, getMyUnspentTransactionOutputs,
-    connectToPeers, broadcastTransactionPool, broadcastLatest, initP2PServer, getSockets, getSenderSockets
+    connectToPeers, broadcastTransactionPool, broadcastLatest, initP2PServer, getSockets, getSenderSockets, initUISocketServer
 }
