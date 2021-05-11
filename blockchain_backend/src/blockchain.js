@@ -11,10 +11,14 @@ const { addToTransactionPool, getTransactionPool, updateTransactionPool } = requ
 const { getPublicFromWallet, createTransaction, getPrivateFromWallet, getBalance } = require('./wallet');
 const http = require('http').createServer();
 const io = require('socket.io')(http, {
-    cors: { origin: "*"}
+    cors: { origin: "*" }
 })
 
-const {Server} = require('socket.io');
+// const {Server} = require('socket.io');
+
+const ioClient = require('socket.io-client');
+
+
 
 
 
@@ -168,7 +172,9 @@ const getAdjustedDifficulty = (latestBlock, aBlockchain) => {
         return previousAdjustmentBlock.difficulty + 1;
     }
     else if (timeNeeded > timeExpected * 2) {
-        return previousAdjustmentBlock.difficulty - 1;
+        if (previousAdjustmentBlock.difficulty > 0) {
+            return previousAdjustmentBlock.difficulty - 1;
+        }
     }
 
     return previousAdjustmentBlock.difficulty;
@@ -378,6 +384,9 @@ const isHashMatchesBlockContent = (block) => {
 
 const isHashMatchesDifficulty = (hashString, difficulty) => {
     const binaryHash = hexToBin(hashString);
+    console.log({
+        difficulty: difficulty
+    })
     const prefix = '0'.repeat(difficulty);
 
     return binaryHash.startsWith(prefix);
@@ -459,6 +468,7 @@ console.log(getBlockchain());
  * List of sockets
  */
 const sockets = [];
+const senderSockets = [];
 
 /**
  * @type {Enumerator<number>}
@@ -469,7 +479,8 @@ const MessageTypeEnum = {
     QUERY_ALL: 1,
     RESPONSE_BLOCKCHAIN: 2,
     QUERY_TRANSACTION_POOL: 3,
-    RESPONSE_TRANSACTION_POOL: 4
+    RESPONSE_TRANSACTION_POOL: 4,
+    CREATE_CONNECTION: 5
 }
 
 
@@ -511,18 +522,22 @@ class Message {
  */
 const initP2PServer = p2pPort => {
     console.log("p2p port = " + p2pPort);
-    
+
     // const server = new WebSocket.Server({ port: p2pPort, cors:"*" });
     io.on('connection', socket => {
-        console.log("Connecting");  
+        console.log("Connecting");
         initConnection(socket);
     });
     http.listen(p2pPort, () => console.log('App is listening websocket - P2P port on: ' + p2pPort));
-    
+
 }
 
 const getSockets = () => {
     return sockets;
+}
+
+const getSenderSockets = () => {
+    return senderSockets;
 }
 
 const responseTransactionPoolMsg = () => ({
@@ -541,7 +556,16 @@ const queryTransactionPoolMsg = () => ({
  */
 const initConnection = ws => {
     console.log("Init connection");
-    sockets.push(ws);
+    // console.log(ws);
+    if (sockets.find(t => t === ws) === undefined) {
+        sockets.push(ws);
+    }
+    else {
+        console.log("No ")
+    }
+    console.log(ws);
+    console.log("Sockets length: " + sockets.length);
+
     initMessageHandler(ws);
     initErrorHandler(ws);
     write(ws, queryChainLengthMsg());
@@ -568,15 +592,14 @@ const JSONToObject = (data) => {
 const initMessageHandler = ws => {
     ws.on('message', data => {
         try {
-
             const message = Message.from(data);
 
-            if (message === null) {
-                console.log('Unable to parse JSON message: ' + data);
-                return;
-            }
+            // if (message === null) {
+            // console.log('Unable to parse JSON message: ' + data);
+            // return;
+            // }
 
-            console.log('Received message: ' + JSON.stringify(message));
+            console.log('Received message: ' + message);
 
             //For each message type, handle it
             switch (message.type) {
@@ -623,6 +646,10 @@ const initMessageHandler = ws => {
                         }
                     });
                     break;
+                case MessageTypeEnum.CREATE_CONNECTION:
+                    const newSocket = ioClient("http://localhost:" + message.port);
+                    senderSockets.push(newSocket);
+                    break;
             }
         }
         catch (e) {
@@ -630,15 +657,15 @@ const initMessageHandler = ws => {
         }
     })
 
-    ws.on('yasuo', data => {
-        try {
-            console.log("abc");
-            ws.emit('yasuo', "aaaaaa")
-        }
-        catch (e) {
-            console.log(e);
-        }
-    })
+    // ws.on('getAddress', data => {
+    //     try {
+
+    //         ws.send('yasuo', "aaaaaa")
+    //     }
+    //     catch (e) {
+    //         console.log(e);
+    //     }
+    // })
 }
 /**
  * The websocket send the message 
@@ -754,18 +781,40 @@ const broadcastLatest = () => {
  */
 const connectToPeers = newPeer => {
     // const ws = new WebSocket(newPeer);
-    const newSocket = new Server();
+    // const newSocket = new Server(newPeer);
+    console.log({
+        newPeer: newPeer
+    })
 
+    //* Khi tạo socket tới địa chỉ p2p newPeer, bên newPeer tạo 1 socket, ra lệnh 
+    //* tạo 1 socket receiver, aka kết nối hai chiều
+    const newSocket = ioClient("http://localhost:" + newPeer);
     newSocket.on('open', () => {
-        initConnection(ws);
+        initConnection(newSocket);
     });
     newSocket.on('error', () => {
         console.log('connection failed');
     });
+
+
+    console.log("New socket created, prepare for init connection")
+    // initConnection(newSocket);
+
+    newSocket.send({
+        type: MessageTypeEnum.CREATE_CONNECTION,
+        port: 6001
+    });
+
+    // console.log(newSocket.io.uri);
+
+    senderSockets.push(newSocket);
+    
+
+
 };
 
 module.exports = {
     getBlockchain, isNewBlockValid, isChainValid, addBlockToChain, generateNextBlock, getLatestBlock, replaceChain, isBlockHasValidStructure,
     generateRawNextBlock, handleReceivedTransaction, sendTransaction, getAccountBalance, generateNextBlockWithTransaction, getUnspentTxOuts, getMyUnspentTransactionOutputs,
-    connectToPeers, broadcastTransactionPool, broadcastLatest, initP2PServer, getSockets
+    connectToPeers, broadcastTransactionPool, broadcastLatest, initP2PServer, getSockets, getSenderSockets
 }

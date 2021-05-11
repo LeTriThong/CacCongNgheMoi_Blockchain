@@ -1,6 +1,6 @@
 const express = require('express');
-
-const { getBlockchain, generateNextBlock, getUnspentTxOuts, generateNextBlockWithTransaction, getMyUnspentTransactionOutputs, generateRawNextBlock, getAccountBalance, getSockets, initP2PServer } = require('./src/blockchain');
+// const bodyParser = require('body-parser')
+const { getBlockchain, generateNextBlock, getUnspentTxOuts, generateNextBlockWithTransaction, getMyUnspentTransactionOutputs, generateRawNextBlock, getAccountBalance, getSockets, initP2PServer, connectToPeers, getSenderSockets } = require('./src/blockchain');
 const { initWallet, getPublicFromWallet } = require('./src/wallet');
 const _ = require('lodash');
 const { getTransactionPool } = require('./src/transactionPool');
@@ -12,6 +12,7 @@ const p2pPort = 6001;
 
 const initHttpServer = (httpPort) => {
     const app = express();
+    app.use(express.json());
     app.use(cors());
 
     app.use((error, req, res, next) => {
@@ -69,7 +70,6 @@ const initHttpServer = (httpPort) => {
 
     /**
      * Get all unspent transaction out owned by the wallet
-     * ! Maybe will put this to client
      */
     app.get('/myUnspentTransactionOutputs', (req, res) => {
         res.send(getMyUnspentTransactionOutputs());
@@ -178,10 +178,21 @@ const initHttpServer = (httpPort) => {
      * Get all p2p sockets
      */
     app.get('/peers', (req, res) => {
-        res.send(getSockets().map(s => s._socket.remoteAddress + ':' + s._socket.remotePort));
+        console.log("Get peers");
+        // res.send(getSockets().map(s => s._socket.remoteAddress + ':' + s._socket.remotePort));
+        res.send(getSockets().map(s => s.handshake.headers.host));
+    
     });
 
+    app.get('/senderSockets', (req, res) => {
+        console.log("Get sender sockets");
+        res.send(getSenderSockets().map(s => s.io.uri));
+    })
+
     app.post('/addPeer', (req, res) => {
+        console.log("Add peers");
+        // console.log(req);
+
         connectToPeers(req.body.peer);
         res.send();
     });
