@@ -215,5 +215,4 @@ const initHttpServer = (httpPort) => {
 initHttpServer(httpPort);
 initP2PServer(p2pPort);
 initUISocketServer(uiSocketPort);
-
 initWallet();

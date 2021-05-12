@@ -202,6 +202,7 @@ const generateRawNextBlock = (blockData) => {
         broadcastLatest();
         return newBlock;
     } else {
+        console.log("Invalid add block to chain")
         return null;
     }
 
@@ -611,9 +612,14 @@ const initMessageHandler = ws => {
             // return;
             // }
 
-            console.log('Received message: ' + data);
-            let message = JSONToObject(data);
-            message.data = JSONToObject(message.data);
+            console.log('Received message: ' + JSON.stringify(data));
+            let message = data;
+
+            if (typeof(data) === 'string') {
+                message = JSONToObject(data);
+            }
+            // message.data = JSONToObject(message.data);
+            console.log(message);
             console.log(message.type);
             console.log(message.data);
 
@@ -626,9 +632,11 @@ const initMessageHandler = ws => {
                     break;
                 case MessageTypeEnum.QUERY_ALL:
                     console.log("QUERY_ALL")
-                    blockchain.push(...message.data);
+                    let k = JSONToObject(message.data);
+                    console.log("K = " + k);
+                    blockchain.push(...k);
                     write(ws, responseChainMessage());
-                    uiSocketServer.send(message.data);
+                    uiSocketServer.send(k);
                     break;
                 case MessageTypeEnum.RESPONSE_BLOCKCHAIN:
                     const receiveBlocks = JSONToObject(message.data);
@@ -668,8 +676,8 @@ const initMessageHandler = ws => {
                     });
                     break;
                 case MessageTypeEnum.CREATE_CONNECTION:
-                    console.log(message.port);
-                    const newSocket = ioClient("http://localhost:" + message.port);
+                    console.log(message.data.port);
+                    const newSocket = ioClient("http://localhost:" + message.data.port);
                     senderSockets.push(newSocket);
                     write(newSocket, queryChainLengthMsg());
                     break;
@@ -858,7 +866,9 @@ const connectToPeers = newPeer => {
 
     newSocket.send({
         type: MessageTypeEnum.CREATE_CONNECTION,
-        port: process.env.P2P_PORT
+        data: {
+            port: process.env.P2P_PORT
+        }
     });
 
     // console.log(newSocket.io.uri);
