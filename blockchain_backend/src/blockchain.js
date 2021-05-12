@@ -473,6 +473,11 @@ console.log(getBlockchain());
  */
 const sockets = [];
 const senderSockets = [];
+const peerHttpPortList = [];
+
+const getPeerHttpPortList = () => {
+    return peerHttpPortList;
+}
 
 /**
  * @type {Enumerator<number>}
@@ -679,6 +684,7 @@ const initMessageHandler = ws => {
                     console.log(message.data.port);
                     const newSocket = ioClient("http://localhost:" + message.data.port);
                     senderSockets.push(newSocket);
+                    peerHttpPortList.push("http://localhost:" + message.data.httpPort)
                     write(newSocket, queryChainLengthMsg());
                     break;
             }
@@ -812,7 +818,7 @@ const broadcastLatest = () => {
  * Connect to a peer
  * @param {string} newPeer 
  */
-const connectToPeers = newPeer => {
+const connectToPeers = (newPeer, httpPort) => {
     // const ws = new WebSocket(newPeer);
     // const newSocket = new Server(newPeer);
     console.log({
@@ -867,13 +873,15 @@ const connectToPeers = newPeer => {
     newSocket.send({
         type: MessageTypeEnum.CREATE_CONNECTION,
         data: {
-            port: process.env.P2P_PORT
+            port: process.env.P2P_PORT,
+            httpPort: process.env.HTTP_PORT
         }
     });
 
     // console.log(newSocket.io.uri);
 
     senderSockets.push(newSocket);
+    peerHttpPortList.push("http://localhost:" + httpPort);
     
 
 
@@ -882,5 +890,5 @@ const connectToPeers = newPeer => {
 module.exports = {
     getBlockchain, isNewBlockValid, isChainValid, addBlockToChain, generateNextBlock, getLatestBlock, replaceChain, isBlockHasValidStructure,
     generateRawNextBlock, handleReceivedTransaction, sendTransaction, getAccountBalance, generateNextBlockWithTransaction, getUnspentTxOuts, getMyUnspentTransactionOutputs,
-    connectToPeers, broadcastTransactionPool, broadcastLatest, initP2PServer, getSockets, getSenderSockets, initUISocketServer
+    connectToPeers, broadcastTransactionPool, broadcastLatest, initP2PServer, getSockets, getSenderSockets, initUISocketServer, getPeerHttpPortList
 }

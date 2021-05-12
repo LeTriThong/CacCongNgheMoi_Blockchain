@@ -1,7 +1,7 @@
 const dotenv = require('dotenv').config();
 const express = require('express');
 // const bodyParser = require('body-parser')
-const { getBlockchain, generateNextBlock, getUnspentTxOuts, generateNextBlockWithTransaction, getMyUnspentTransactionOutputs, generateRawNextBlock, getAccountBalance, getSockets, initP2PServer, connectToPeers, getSenderSockets, initUISocketServer } = require('./src/blockchain');
+const { getBlockchain, generateNextBlock, getUnspentTxOuts, generateNextBlockWithTransaction, getMyUnspentTransactionOutputs, generateRawNextBlock, getAccountBalance, getSockets, initP2PServer, connectToPeers, getSenderSockets, initUISocketServer, getPeerHttpPortList } = require('./src/blockchain');
 const { initWallet, getPublicFromWallet } = require('./src/wallet');
 const _ = require('lodash');
 const { getTransactionPool } = require('./src/transactionPool');
@@ -183,7 +183,12 @@ const initHttpServer = (httpPort) => {
     app.get('/peers', (req, res) => {
         console.log("Get peers");
         // res.send(getSockets().map(s => s._socket.remoteAddress + ':' + s._socket.remotePort));
-        res.send(getSockets().map(s => s.handshake.headers.host));
+        // let list = getSockets().map(s => s.handshake.headers.host);
+        // let list = getSenderSockets().map(s => s.io.uri);
+        let list = getPeerHttpPortList();
+
+        console.log("List = " + list);
+        res.send(list);
     
     });
 
@@ -196,7 +201,7 @@ const initHttpServer = (httpPort) => {
         console.log("Add peers");
         // console.log(req);
 
-        connectToPeers(req.body.peer);
+        connectToPeers(req.body.peer, req.body.httpPort);
         res.send();
     });
 

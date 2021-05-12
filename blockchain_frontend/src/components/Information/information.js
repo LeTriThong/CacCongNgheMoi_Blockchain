@@ -31,6 +31,7 @@ const Information = (props) => {
     const [transactionPool, setTransactionPool] = useState([]);
     const [blockchain, setBlockchain] = useState([]);
     const [socket, setSocket] = useState();
+    const [p2pAddress, setP2pAddress] = useState([]);
 
     // const setup = (t) => {
     //     setPrivateKey(t);
@@ -78,12 +79,22 @@ const Information = (props) => {
         //     console.log(error);
         // });
         const init = async () => {
+            await addPeer(SUPER_NODE_ENDPOINT);
+            await getPeerFromSuperNode();
+            // console.log(p2pAddress.length);
+            // for(let i = 0; i < p2pAddress.length; ++i) {
+            //     addPeer(p2pAddress[i]);
+            // }
+            // await p2pAddress.foreach(element => {
+                // addPeer(element);
+            // });
+
             await getBalance();
             await getAddress();
             await getTransactionPool();
             await getBlockchain();
-            await getPeer();
-            await addPeer();
+            // await getPeer();
+            // await addPeer();
             
         }
 
@@ -95,14 +106,15 @@ const Information = (props) => {
 
     
 
-    const addPeer = async () => {
-        if (SERVER_ENDPOINT === SUPER_NODE_ENDPOINT) {
+    const addPeer = async (endpoint) => {
+        if (endpoint === SERVER_ENDPOINT) {
             console.log("Duplicate")
             return;
         }
 
-        await Axios.post(SUPER_NODE_ENDPOINT + '/addPeer', {
-            peer: process.env.REACT_APP_P2P_PORT
+        await Axios.post(endpoint + '/addPeer', {
+            peer: process.env.REACT_APP_P2P_PORT,
+            httpPort: process.env.REACT_APP_HTTP_PORT
         })
         .then(res => {
             if (res.status === 200) {
@@ -148,6 +160,32 @@ const Information = (props) => {
             if (res.status === 200) {
                 console.log("Connecting to peers")
                 console.log(res.data);
+                setP2pAddress(res.data);
+                console.log(res.data.length);
+                for(let i = 0; i < res.data.length; ++i) {
+                    addPeer(res.data[i]);
+                }
+            }
+            else {
+                console.log("Fail to connect to peers");
+            }
+        })
+        .catch(error => {
+            console.log(error);
+        });
+    }
+
+    const getPeerFromSuperNode = async () => {
+        await Axios.get(SUPER_NODE_ENDPOINT + '/peers')
+        .then(res => {
+            if (res.status === 200) {
+                console.log("Connecting to peers")
+                console.log(res.data);
+                setP2pAddress(res.data);
+                console.log(res.data.length);
+                for(let i = 0; i < res.data.length; ++i) {
+                    addPeer(res.data[i]);
+                }
             }
             else {
                 console.log("Fail to connect to peers");
