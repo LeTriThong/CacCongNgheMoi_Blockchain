@@ -83,12 +83,28 @@ const createTxOuts = (receiverAddress, myAddress, amount, leftOverAmount) => {
 
 const createTransaction = (receiverAddress, amount, privateKey, unspentTxOuts, txPool) => {
     console.log('txPool: %s', JSON.stringify(txPool));
+    console.log('private key: ' + privateKey);
     const myAddress = getPublicKey(privateKey);
+    console.log("My address: " + myAddress);
+
     const myUnspentTxOutsA = unspentTxOuts.filter((uTxO) => uTxO.address === myAddress);
+    console.log("myUnspentTxOutsA");
+
+    console.log(myUnspentTxOutsA);
 
     const myUnspentTxOuts = filterTxPoolTxs(myUnspentTxOutsA, txPool);
+    console.log("myUnspentTxOuts");
+
+    console.log(myUnspentTxOuts);
 
     const {includedUnspentTxOuts, leftOverAmount} = findTxOutsForAmount(amount, myUnspentTxOuts);
+    console.log("includedUnspentTxOuts");
+
+    console.log(includedUnspentTxOuts);
+
+    console.log("leftOverAmount");
+    console.log(leftOverAmount);
+
 
     const toUnsignedTxIn = (unspentTxOut) => {
         const txIn = new TxIn();
@@ -97,17 +113,29 @@ const createTransaction = (receiverAddress, amount, privateKey, unspentTxOuts, t
         return txIn;
     };
 
+
     const unsignedTxIns = includedUnspentTxOuts.map(toUnsignedTxIn);
+    console.log("unsignedTxIns");
+
+    console.log(unsignedTxIns);
+
 
     const tx = new Transaction();
     tx.txIns = unsignedTxIns;
     tx.txOuts = createTxOuts(receiverAddress, myAddress, amount, leftOverAmount);
     tx.id = getTransactionId(tx);
+    console.log("tx");
+    console.log(tx);
 
     tx.txIns = tx.txIns.map((txIn, index) => {
         txIn.signature = signTxIn(tx, index, privateKey, unspentTxOuts);
+        console.log("txIn.signature");
+        console.log(txIn.signature);
         return txIn;
     });
+
+    console.log("tx");
+    console.log(tx);
 
     return tx;
 };

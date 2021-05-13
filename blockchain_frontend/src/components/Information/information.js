@@ -23,6 +23,10 @@ const Information = (props) => {
         CREATE_CONNECTION: 5
     }
 
+    const UIMessageTypeEnum = {
+        ADD_BLOCK_TO_CHAIN: 0
+    }
+
 
     console.log("abcd")
     // const [privateKey, setPrivateKey] = useState("asdada");
@@ -57,8 +61,18 @@ const Information = (props) => {
             console.log(data);
             // setSocket(socket.push(data));
             // setBlockchain(blockchain.push(data))
+            let message = JSON.parse(data);
+            console.log(message);
+            switch (message.type) {
+                case UIMessageTypeEnum.ADD_BLOCK_TO_CHAIN:
+                    getBlockchain();
+                    break;
+                default:
+                    console.log("Wrong UI message type")
+            }
             
-            getBlockchain();
+            // getBlockchain();
+
         })
 
         // console.log()
@@ -233,6 +247,7 @@ const Information = (props) => {
                 // console.log("Success");
                 getBlockchain();
                 getBalance();
+                getTransactionPool();
             }
         })
     }
@@ -260,11 +275,9 @@ const Information = (props) => {
                                 <label className="Info-card-title">Address</label>
                             </div>
                             <div className="Info-card-content">
-                                <label className="Info-card-content">{address.substring(0, 32)}</label>
+                                <label className="Info-card-content">{address}</label>
                             </div>
-                            <div className="Info-card-content">
-                                <label className="Info-card-content">{address.substring(32, 64)}</label>
-                            </div>
+                            
                         </div>
 
                     </div>
@@ -329,6 +342,9 @@ const Information = (props) => {
 
                     </div>
 
+                </div>
+                <div>
+                <label className="Info-send-title">{address} </label>
                 </div>
                 <div>
                     <label className="Info-send-title">Transaction pool: </label>

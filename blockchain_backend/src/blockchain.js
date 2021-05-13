@@ -20,7 +20,7 @@ const ioClient = require('socket.io-client');
 
 const http1 = require('http').createServer();
 const uiSocketServer = require('socket.io')(http1, {
-    cors: {origin: "*"}
+    cors: { origin: "*" }
 })
 
 
@@ -270,6 +270,9 @@ const getAccountBalance = () => {
  * @returns 
  */
 const sendTransaction = (address, amount) => {
+    console.log("sendTransaction");
+    console.log("address: " + address);
+    console.log("amount: " + amount);
     const newTransaction = createTransaction(address, amount, getPrivateFromWallet(), getUnspentTxOuts(), getTransactionPool());
     addToTransactionPool(newTransaction, getUnspentTxOuts());
     broadcastTransactionPool();
@@ -489,7 +492,12 @@ const MessageTypeEnum = {
     RESPONSE_BLOCKCHAIN: 2,
     QUERY_TRANSACTION_POOL: 3,
     RESPONSE_TRANSACTION_POOL: 4,
-    CREATE_CONNECTION: 5
+    CREATE_CONNECTION: 5,
+    RESPONSE_LATEST: 6
+}
+
+const UIMessageTypeEnum = {
+    ADD_BLOCK_TO_CHAIN: 0
 }
 
 
@@ -559,7 +567,7 @@ const getSenderSockets = () => {
 }
 
 const responseTransactionPoolMsg = () => ({
-    'type': MessageTypeEnum.RESPONSE_TRANSACTION_POOL,
+    'type': MessageTypeEnum.RESPONSE_TRANSACTION_POOL, //* 4
     'data': JSON.stringify(getTransactionPool())
 });
 
@@ -620,7 +628,7 @@ const initMessageHandler = ws => {
             console.log('Received message: ' + JSON.stringify(data));
             let message = data;
 
-            if (typeof(data) === 'string') {
+            if (typeof (data) === 'string') {
                 message = JSONToObject(data);
             }
             // message.data = JSONToObject(message.data);
@@ -658,7 +666,7 @@ const initMessageHandler = ws => {
                     //     receiveBlocks.push(newBlock);
                     // })
 
-                    handleBlockchainResponse(receivedBlocks);
+                    handleBlockchainResponse(receiveBlocks);
                     break;
                 case MessageTypeEnum.QUERY_TRANSACTION_POOL:
                     write(ws, responseTransactionPoolMsg());
@@ -712,8 +720,10 @@ const initMessageHandler = ws => {
  */
 const write = (ws, message) => ws.send(JSON.stringify(message));
 
-const broadcast = (message) => senderSockets.forEach(socket => write(socket, message));
-
+const broadcast = (message) => {
+    console.log("Broadcastingggggggggggggggggggggggggggggg")
+    senderSockets.forEach(socket => write(socket, message));
+}
 
 const queryChainLengthMsg = () => {
     console.log("Query chain length msg");
@@ -750,7 +760,7 @@ const responseLatestMessage = () => {
     // console.log("Blockchain = " + JSON.stringify(getBlockchain()));
 
     let data = {
-        'type': MessageTypeEnum.QUERY_ALL,
+        'type': MessageTypeEnum.RESPONSE_BLOCKCHAIN,
         'data': JSON.stringify([getLatestBlock()])
     }
     return data;
@@ -779,8 +789,9 @@ const handleBlockchainResponse = receivedBlocks => {
         console.log('received block chain size of 0');
         return;
     }
+
     const latestBlockReceived = receivedBlocks[receivedBlocks.length - 1];
-    if (!isValidBlockStructure(latestBlockReceived)) {
+    if (!isBlockHasValidStructure(latestBlockReceived)) {
         console.log('block structuture not valid');
         return;
     }
@@ -793,6 +804,7 @@ const handleBlockchainResponse = receivedBlocks => {
         if (latestBlockHeld.hash === latestBlockReceived.previousHash) {
             if (addBlockToChain(latestBlockReceived)) {
                 broadcast(responseLatestMessage());
+                uiSocketServer.send(addBlockToChainUIMessage(latestBlockReceived));
             }
         } else if (receivedBlocks.length === 1) {
             console.log('We have to query the chain from our peer');
@@ -805,6 +817,11 @@ const handleBlockchainResponse = receivedBlocks => {
         console.log('received blockchain is not longer than received blockchain. Do nothing');
     }
 };
+
+const addBlockToChainUIMessage = (block) => {
+    let message = { type: UIMessageTypeEnum.ADD_BLOCK_TO_CHAIN, data: block }
+    return JSON.stringify(message);
+}
 
 const broadcastTransactionPool = () => {
     broadcast(responseTransactionPoolMsg());
@@ -843,27 +860,39 @@ const connectToPeers = (newPeer, httpPort) => {
         console.log("abc");
         switch (p.type) {
             case MessageTypeEnum.QUERY_LATEST:
-                console.log("a1");
+                console.log("a0");
                 break;
             case MessageTypeEnum.QUERY_ALL:
-                console.log("a2");
+                console.log("a1");
                 blockchain.push(pData);
                 uiSocketServer.send(pData);
                 break;
             case MessageTypeEnum.RESPONSE_BLOCKCHAIN:
-                console.log("a3");
-                
+                console.log("a2");
+
                 break;
             case MessageTypeEnum.QUERY_TRANSACTION_POOL:
-                console.log("a4");
-               
+                console.log("a3");
+
                 break;
             case MessageTypeEnum.RESPONSE_TRANSACTION_POOL:
+                console.log("a4");
+
+                break;
+            case MessageTypeEnum.CREATE_CONNECTION:
                 console.log("a5");
-                
-                break;   
+
+                break;
+            case MessageTypeEnum.RESPONSE_LATEST:
+                console.log("a6");
+                if (pData === null) {
+                    console.log('invalid blocks received: %s', JSON.stringify(pData));
+                    break;
+                }
+                handleBlockchainResponse(pData);
+                break;
         }
-        
+
     })
 
 
@@ -882,7 +911,7 @@ const connectToPeers = (newPeer, httpPort) => {
 
     senderSockets.push(newSocket);
     peerHttpPortList.push("http://localhost:" + httpPort);
-    
+
 
 
 };

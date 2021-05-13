@@ -73,7 +73,7 @@ class TxOut {
 
 class Transaction {
     id          // * Id of transaction
-    ixIns       // * All input, type: TxIn[] 
+    txIns       // * All input, type: TxIn[] 
     txOuts      // * All output, type: TxOut[]
 }
 
@@ -204,8 +204,7 @@ const validateCoinbaseTx = (transaction, blockIndex) => {
 };
 
 const validateTxIn = (txIn, transaction, aUnspentTxOuts) => {
-    const referencedUTxOut =
-        aUnspentTxOuts.find((uTxO) => uTxO.txOutId === txIn.txOutId && uTxO.txOutId === txIn.txOutId);
+    const referencedUTxOut = aUnspentTxOuts.find((uTxO) => uTxO.txOutId === txIn.txOutId && uTxO.txOutIndex === txIn.txOutIndex);
     if (referencedUTxOut == null) {
         console.log('referenced txOut not found: ' + JSON.stringify(txIn));
         return false;
@@ -377,6 +376,9 @@ const isValidTransactionStructure = (transaction) => {
 
 //valid address is a valid ecdsa public key in the 04 + X-coordinate + Y-coordinate format
 const isValidAddress = (address) => {
+    console.log("address");
+    console.log(address);
+    console.log("address.length: " + address.length);
     if (address.length !== 130) {
         console.log('invalid public key length');
         return false;
