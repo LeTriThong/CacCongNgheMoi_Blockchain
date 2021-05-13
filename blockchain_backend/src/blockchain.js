@@ -276,6 +276,7 @@ const sendTransaction = (address, amount) => {
     const newTransaction = createTransaction(address, amount, getPrivateFromWallet(), getUnspentTxOuts(), getTransactionPool());
     addToTransactionPool(newTransaction, getUnspentTxOuts());
     broadcastTransactionPool();
+    broadcastToUI(UIMessageTypeEnum.UPDATE_TRANSACTION_POOL, getTransactionPool());
     return newTransaction;
 }
 
@@ -463,6 +464,7 @@ const replaceChain = (newBlocks) => {
 
 const handleReceivedTransaction = (transaction) => {
     addToTransactionPool(transaction, getUnspentTxOuts());
+    broadcastToUI(UIMessageTypeEnum.UPDATE_TRANSACTION_POOL, getTransactionPool());
 }
 
 console.log("Blockchain.js");
@@ -497,7 +499,8 @@ const MessageTypeEnum = {
 }
 
 const UIMessageTypeEnum = {
-    ADD_BLOCK_TO_CHAIN: 0
+    ADD_BLOCK_TO_CHAIN: 0,
+    UPDATE_TRANSACTION_POOL: 1
 }
 
 
@@ -804,7 +807,8 @@ const handleBlockchainResponse = receivedBlocks => {
         if (latestBlockHeld.hash === latestBlockReceived.previousHash) {
             if (addBlockToChain(latestBlockReceived)) {
                 broadcast(responseLatestMessage());
-                uiSocketServer.send(addBlockToChainUIMessage(latestBlockReceived));
+                // uiSocketServer.send(addBlockToChainUIMessage(latestBlockReceived));
+                broadcastToUI(UIMessageTypeEnum.ADD_BLOCK_TO_CHAIN, latestBlockReceived);
             }
         } else if (receivedBlocks.length === 1) {
             console.log('We have to query the chain from our peer');
@@ -818,9 +822,19 @@ const handleBlockchainResponse = receivedBlocks => {
     }
 };
 
-const addBlockToChainUIMessage = (block) => {
-    let message = { type: UIMessageTypeEnum.ADD_BLOCK_TO_CHAIN, data: block }
-    return JSON.stringify(message);
+// const addBlockToChainUIMessage = (block) => {
+//     let message = { type: UIMessageTypeEnum.ADD_BLOCK_TO_CHAIN, data: block }
+//     return JSON.stringify(message);
+// }
+
+
+const broadcastToUI = (type, data) => {
+    let message = {
+        type: type,
+        data: data
+    }
+
+    uiSocketServer.send(JSON.stringify(message));
 }
 
 const broadcastTransactionPool = () => {

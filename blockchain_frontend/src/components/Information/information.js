@@ -7,35 +7,19 @@ import Axios from 'axios'
 
 import '../../App.css'
 import { io } from "socket.io-client"
-const ENDPOINT = "http://localhost:" + process.env.REACT_APP_P2P_PORT;
+// const ENDPOINT = "http://localhost:" + process.env.REACT_APP_P2P_PORT;
 const SERVER_ENDPOINT = "http://localhost:" + process.env.REACT_APP_HTTP_PORT;
 const SUPER_NODE_ENDPOINT = "http://localhost:" + process.env.REACT_APP_SUPER_NODE_PORT;
 const UI_SOCKET_ENDPOINT = "http://localhost:" + process.env.REACT_APP_UI_SOCKET_PORT;
 
 
 const Information = (props) => {
-    const MessageTypeEnum = {
-        QUERY_LATEST: 0,
-        QUERY_ALL: 1,
-        RESPONSE_BLOCKCHAIN: 2,
-        QUERY_TRANSACTION_POOL: 3,
-        RESPONSE_TRANSACTION_POOL: 4,
-        CREATE_CONNECTION: 5
-    }
-
-    const UIMessageTypeEnum = {
-        ADD_BLOCK_TO_CHAIN: 0
-    }
-
-
-    console.log("abcd")
     // const [privateKey, setPrivateKey] = useState("asdada");
     const [address, setAddress] = useState("public key");
     const [coin, setCoin] = useState(-5);
     const [transactionPool, setTransactionPool] = useState([]);
     const [blockchain, setBlockchain] = useState([]);
-    const [socket, setSocket] = useState();
-    const [p2pAddress, setP2pAddress] = useState([]);
+
 
     // const setup = (t) => {
     //     setPrivateKey(t);
@@ -43,6 +27,13 @@ const Information = (props) => {
     // }
 
     useEffect(() => {
+
+        const UIMessageTypeEnum = {
+            ADD_BLOCK_TO_CHAIN: 0,
+            UPDATE_TRANSACTION_POOL: 1,
+            UPDATE_BALANCE: 2
+        }
+        
         // const socket = io(ENDPOINT);
         // console.log("abcde")
 
@@ -62,15 +53,22 @@ const Information = (props) => {
             // setSocket(socket.push(data));
             // setBlockchain(blockchain.push(data))
             let message = JSON.parse(data);
-            console.log(message);
+            console.log("Message: " + message);
             switch (message.type) {
                 case UIMessageTypeEnum.ADD_BLOCK_TO_CHAIN:
                     getBlockchain();
+                    getBalance();
+                    break;
+                case UIMessageTypeEnum.UPDATE_TRANSACTION_POOL:
+                    getTransactionPool();
+                    break;
+                case UIMessageTypeEnum.UPDATE_BALANCE:
+                    getBalance();
                     break;
                 default:
                     console.log("Wrong UI message type")
             }
-            
+
             // getBlockchain();
 
         })
@@ -100,7 +98,7 @@ const Information = (props) => {
             //     addPeer(p2pAddress[i]);
             // }
             // await p2pAddress.foreach(element => {
-                // addPeer(element);
+            // addPeer(element);
             // });
 
             await getBalance();
@@ -109,7 +107,7 @@ const Information = (props) => {
             await getBlockchain();
             // await getPeer();
             // await addPeer();
-            
+
         }
 
         init();
@@ -118,7 +116,7 @@ const Information = (props) => {
 
     }, [])
 
-    
+
 
     const addPeer = async (endpoint) => {
         if (endpoint === SERVER_ENDPOINT) {
@@ -130,20 +128,20 @@ const Information = (props) => {
             peer: process.env.REACT_APP_P2P_PORT,
             httpPort: process.env.REACT_APP_HTTP_PORT
         })
-        .then(res => {
-            if (res.status === 200) {
-                console.log("Add peer")
-                console.log(res.data);
-            }
-            else {
-                console.log("Fail to add peers");
-            }
-        })
-        .catch(error => {
-            console.log(error);
-        });
+            .then(res => {
+                if (res.status === 200) {
+                    console.log("Add peer")
+                    console.log(res.data);
+                }
+                else {
+                    console.log("Fail to add peers");
+                }
+            })
+            .catch(error => {
+                console.log(error);
+            });
     }
-    
+
 
     const getTransactionPool = async () => {
         Axios.get(SERVER_ENDPOINT + '/transactionPool')
@@ -168,88 +166,88 @@ const Information = (props) => {
             });
     }
 
-    const getPeer = async () => {
-        await Axios.get(SERVER_ENDPOINT + '/peers')
-        .then(res => {
-            if (res.status === 200) {
-                console.log("Connecting to peers")
-                console.log(res.data);
-                setP2pAddress(res.data);
-                console.log(res.data.length);
-                for(let i = 0; i < res.data.length; ++i) {
-                    addPeer(res.data[i]);
-                }
-            }
-            else {
-                console.log("Fail to connect to peers");
-            }
-        })
-        .catch(error => {
-            console.log(error);
-        });
-    }
+    // const getPeer = async () => {
+    //     await Axios.get(SERVER_ENDPOINT + '/peers')
+    //         .then(res => {
+    //             if (res.status === 200) {
+    //                 console.log("Connecting to peers")
+    //                 console.log(res.data);
+    //                 setP2pAddress(res.data);
+    //                 console.log(res.data.length);
+    //                 for (let i = 0; i < res.data.length; ++i) {
+    //                     addPeer(res.data[i]);
+    //                 }
+    //             }
+    //             else {
+    //                 console.log("Fail to connect to peers");
+    //             }
+    //         })
+    //         .catch(error => {
+    //             console.log(error);
+    //         });
+    // }
 
     const getPeerFromSuperNode = async () => {
         await Axios.get(SUPER_NODE_ENDPOINT + '/peers')
-        .then(res => {
-            if (res.status === 200) {
-                console.log("Connecting to peers")
-                console.log(res.data);
-                setP2pAddress(res.data);
-                console.log(res.data.length);
-                for(let i = 0; i < res.data.length; ++i) {
-                    addPeer(res.data[i]);
+            .then(res => {
+                if (res.status === 200) {
+                    console.log("Connecting to peers")
+                    console.log(res.data);
+                    // setP2pAddress(res.data);
+                    console.log(res.data.length);
+                    for (let i = 0; i < res.data.length; ++i) {
+                        addPeer(res.data[i]);
+                    }
                 }
-            }
-            else {
-                console.log("Fail to connect to peers");
-            }
-        })
-        .catch(error => {
-            console.log(error);
-        });
+                else {
+                    console.log("Fail to connect to peers");
+                }
+            })
+            .catch(error => {
+                console.log(error);
+            });
     }
 
     const getBlockchain = async () => {
         await Axios.get(SERVER_ENDPOINT + '/blocks')
-        .then(response => {
-            console.log("Get blockchain");
-            console.log(response);
+            .then(response => {
+                console.log("Get blockchain");
+                console.log(response);
 
-            // setTransactionPool(response.data);
-            setBlockchain(response.data.reverse());
-        })
-        .catch(error => {
-            console.log(error);
-        });
+                // setTransactionPool(response.data);
+                setBlockchain(response.data.reverse());
+            })
+            .catch(error => {
+                console.log(error);
+            });
     }
 
     const getBalance = async () => {
         Axios.get(SERVER_ENDPOINT + '/balance')
-        .then((response) => {
-            // console.log(JSON.stringify(response))
-            console.log("Get balance");
-            setCoin(response.data.balance);
-        })
-        .catch(error => {
-            console.log(error);
-        });
+            .then((response) => {
+                // console.log(JSON.stringify(response))
+                console.log("Get balance");
+                setCoin(response.data.balance);
+            })
+            .catch(error => {
+                console.log(error);
+            });
     }
 
 
     const onMineBlock = async () => {
         await Axios.post(SERVER_ENDPOINT + '/mineBlock')
-        .then(res => {
-            if (res.status === 400) {
-                console.log("Faillllllllllll");
-            }
-            else if (res.status === 200) {
-                // console.log("Success");
-                getBlockchain();
-                getBalance();
-                getTransactionPool();
-            }
-        })
+            .then(res => {
+                if (res.status === 400) {
+                    console.log("Faillllllllllll");
+                }
+                else if (res.status === 200) {
+                    // console.log("Success");
+                    getBlockchain();
+                    getBalance();
+                    getTransactionPool();
+                }
+            })
     }
 
     // const onLogin = () => {
@@ -277,7 +275,7 @@ const Information = (props) => {
                             <div className="Info-card-content">
                                 <label className="Info-card-content">{address}</label>
                             </div>
-                            
+
                         </div>
 
                     </div>
@@ -344,7 +342,7 @@ const Information = (props) => {
 
                 </div>
                 <div>
-                <label className="Info-send-title">{address} </label>
+                    <label className="Info-send-title">{address} </label>
                 </div>
                 <div>
                     <label className="Info-send-title">Transaction pool: </label>

@@ -22,6 +22,7 @@ const addToTransactionPool = (tx, unspentTxOuts) => {
 
     console.log('adding to txPool: %s', JSON.stringify(tx));
     transactionPool.push(tx);
+    
 };
 
 const hasTxIn = (txIn, unspentTxOuts) => {
