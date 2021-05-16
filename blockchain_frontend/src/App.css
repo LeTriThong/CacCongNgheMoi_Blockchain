@@ -176,9 +176,12 @@
 
 .Login-textinput {
   width: 400px;
+  height: 80px;
   font-size: small;
   font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
   margin: 5px;
+  word-break: break-all;
+  resize: none;
 }
 
 .Login-confirm {
@@ -306,3 +309,4 @@
   color: white;
   background-color: #05C0A5;
 }
+

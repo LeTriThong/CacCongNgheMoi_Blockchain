@@ -558,8 +558,14 @@ const initUISocketServer = uiSocketPort => {
         console.log("A client UI has accessed to this UI socket!!!!");
     });
 
+
     http1.listen(uiSocketPort, () => console.log('App is listening UI socket port on: ' + uiSocketPort));
 }
+
+// const disconnectSockets = () => {
+//     uiSocketServer.disconnectSockets();
+    
+// }
 
 const getSockets = () => {
     return sockets;

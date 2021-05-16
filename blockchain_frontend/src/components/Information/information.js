@@ -4,9 +4,11 @@ import account from '../../assets/account.svg';
 import network from '../../assets/network.svg';
 import wallet from '../../assets/wallet.svg';
 import Axios from 'axios'
+import Swal from 'sweetalert2'
 
 import '../../App.css'
 import { io } from "socket.io-client"
+import { Link } from 'react-router-dom';
 // const ENDPOINT = "http://localhost:" + process.env.REACT_APP_P2P_PORT;
 const SERVER_ENDPOINT = "http://localhost:" + process.env.REACT_APP_HTTP_PORT;
 const SUPER_NODE_ENDPOINT = "http://localhost:" + process.env.REACT_APP_SUPER_NODE_PORT;
@@ -14,6 +16,7 @@ const UI_SOCKET_ENDPOINT = "http://localhost:" + process.env.REACT_APP_UI_SOCKET
 
 
 const Information = (props) => {
+    console.log("abcdefg", props.location.privateKey);
     // const [privateKey, setPrivateKey] = useState("asdada");
     const [address, setAddress] = useState("public key");
     const [coin, setCoin] = useState(-5);
@@ -21,19 +24,42 @@ const Information = (props) => {
     const [blockchain, setBlockchain] = useState([]);
 
 
+    const [transactionAddress, setTransactionAddress] = useState("");
+    const [transactionCoin, setTransactionCoin] = useState(0);
+
     // const setup = (t) => {
     //     setPrivateKey(t);
     //     console.log(t);
     // }
 
     useEffect(() => {
+        const getPeerFromSuperNode = async () => {
+            await Axios.get(SUPER_NODE_ENDPOINT + '/peers')
+                .then(res => {
+                    if (res.status === 200) {
+                        console.log("Connecting to peers")
+                        console.log(res.data);
+                        // setP2pAddress(res.data);
+                        console.log(res.data.length);
+                        for (let i = 0; i < res.data.length; ++i) {
+                            addPeer(res.data[i]);
+                        }
+                    }
+                    else {
+                        console.log("Fail to connect to peers");
+                    }
+                })
+                .catch(error => {
+                    console.log(error);
+                });
+        }
 
         const UIMessageTypeEnum = {
             ADD_BLOCK_TO_CHAIN: 0,
             UPDATE_TRANSACTION_POOL: 1,
             UPDATE_BALANCE: 2
         }
-        
+
         // const socket = io(ENDPOINT);
         // console.log("abcde")
 
@@ -111,9 +137,6 @@ const Information = (props) => {
         }
 
         init();
-
-
-
     }, [])
 
 
@@ -187,26 +210,7 @@ const Information = (props) => {
     //         });
     // }
 
-    const getPeerFromSuperNode = async () => {
-        await Axios.get(SUPER_NODE_ENDPOINT + '/peers')
-            .then(res => {
-                if (res.status === 200) {
-                    console.log("Connecting to peers")
-                    console.log(res.data);
-                    // setP2pAddress(res.data);
-                    console.log(res.data.length);
-                    for (let i = 0; i < res.data.length; ++i) {
-                        addPeer(res.data[i]);
-                    }
-                }
-                else {
-                    console.log("Fail to connect to peers");
-                }
-            })
-            .catch(error => {
-                console.log(error);
-            });
-    }
+
 
     const getBlockchain = async () => {
         await Axios.get(SERVER_ENDPOINT + '/blocks')
@@ -239,15 +243,72 @@ const Information = (props) => {
         await Axios.post(SERVER_ENDPOINT + '/mineBlock')
             .then(res => {
                 if (res.status === 400) {
-                    console.log("Faillllllllllll");
+                    Swal.fire({
+                        icon: 'error',
+                        text: 'Unable to mine',
+                        showConfirmButton: false,
+                        timer: 1500
+                    })
                 }
                 else if (res.status === 200) {
                     // console.log("Success");
                     getBlockchain();
                     getBalance();
                     getTransactionPool();
+
+                    Swal.fire({
+                        position: 'top-end',
+                        icon: 'success',
+                        text: 'Mine success',
+                        showConfirmButton: false,
+                        timer: 1500
+                    })
                 }
             })
+    }
+
+    const handleTransactionAddress = (e) => {
+        setTransactionAddress(e);
+
+    }
+
+    const handleTransactionCoin = (e) => {
+        setTransactionCoin(e)
+    }
+
+    const onSendTransaction = async () => {
+        console.log("Address = " + transactionAddress);
+        console.log("Amount = " + transactionCoin)
+        await Axios.post(SERVER_ENDPOINT + '/sendTransaction', {
+            "address": transactionAddress,
+            "amount": parseFloat(transactionCoin)
+        })
+            .then(res => {
+                if (res.status === 200) {
+                    console.log(res.data);
+
+                    Swal.fire({
+                        icon: 'success',
+                        text: 'Transaction has been sent to transaction pool',
+                        showConfirmButton: false,
+                        timer: 1500
+                    })
+                }
+                else {
+                    console.log(res.data);
+                    Swal.fire({
+                        icon: 'error',
+                        text: res.data
+                    })
+                }
+            })
+    }
+
+    const onLogout = async() => {
+        await Axios.get(SERVER_ENDPOINT + '/logout')
+        .then(res => {
+            console.log("Disconnect successfully");
+        });
     }
 
     // const onLogin = () => {
@@ -258,8 +319,19 @@ const Information = (props) => {
     return (
 
         <div className="Home">
-            <div style={{ flexDirection: 'row', marginBottom: '50px' }}>
-                <img className="Home-logo-image" src={logo} alt="logo"></img>
+            <div style={{ display:'flex', flexDirection: 'row', marginBottom: '50px', justifyContent: 'space-between' }}>
+              
+                    <img className="Home-logo-image" src={logo} alt="logo"></img>
+           
+                <div>
+                    <Link to='/'>
+                        <div>
+
+                            <label style={{color: '#05C0A5', fontSize: 'large', marginRight: '20px'}} onClick={onLogout}>Log out </label>
+                        </div>
+                    </Link>
+                </div>
+
             </div>
 
             <div>
@@ -319,27 +391,24 @@ const Information = (props) => {
                     <div style={{ display: 'flex', flex: 2, flexDirection: 'column' }}>
                         <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                             <label className="Info-send-title">Amount</label>
-                            <input className="Info-send-input" type="number"></input>
+                            <input className="Info-send-input" value={transactionCoin} type="number" onChange={(e) => handleTransactionCoin(e.target.value)}></input>
                         </div>
                         <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                             <label className="Info-send-title">To address</label>
-                            <input className="Info-send-input"></input>
+                            <input className="Info-send-input" value={transactionAddress} onChange={(e) => handleTransactionAddress(e.target.value)}></input>
                         </div>
-                        <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                        {/* <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                             <label className="Info-send-title">Transaction fee</label>
                             <input className="Info-send-input"></input>
-                        </div>
+                        </div> */}
                         <div>
-                            <button className="Info-send-transaction-confirm">Send transaction</button>
+                            <button className="Info-send-transaction-confirm" onClick={onSendTransaction}>Send transaction</button>
                             <button className="Info-send-transaction-confirm" onClick={onMineBlock} >Mine block</button>
 
                         </div>
                     </div>
                     <div style={{ display: 'flex', flex: 1 }}>
-
-
                     </div>
-
                 </div>
                 <div>
                     <label className="Info-send-title">{address} </label>
@@ -360,6 +429,7 @@ const Information = (props) => {
 
                 </div>
             </div>
+
 
 
 

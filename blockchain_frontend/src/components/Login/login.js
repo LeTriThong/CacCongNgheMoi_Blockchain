@@ -5,11 +5,15 @@ import { useHistory } from "react-router-dom";
 
 
 import '../../App.css'
+import axios from 'axios';
+import Swal from 'sweetalert2';
 
 
 const Login = (props) => {
+    const SERVER_ENDPOINT = "http://localhost:" + process.env.REACT_APP_HTTP_PORT;
+
     const history = useHistory();
-    const [privateKey, setPrivateKey] = useState("asdada");
+    const [privateKey, setPrivateKey] = useState("");
     // const setupText = (t) => {
     //     console.log(t);
     //     setText(t.target.value);
@@ -33,9 +37,30 @@ const Login = (props) => {
         // console.log(textLength)
         console.log(privateKey);
         console.log(privateKey.length);
-        if (privateKey.length === 1) {
-            history.push(`/info`);
-        }
+        // if (privateKey.length === 1) {
+            // history.push(`/information`);
+        // }
+        axios.post(SERVER_ENDPOINT + '/initWallet', {
+            privateKey: privateKey
+        })
+        .then((res) => {
+            if (res.status === 200) {
+                props.history.push('/information');
+            }
+            else {
+                Swal.fire({
+                    icon: 'error',
+                    text: "Incorrect private key"
+                })
+            }
+        }).catch (e => {
+            Swal.fire({
+                icon: 'error',
+                text: "Something went wrong"
+            })
+        })
+        console.log(privateKey);
+
         console.log("OK");
     }
 
@@ -57,7 +82,7 @@ const Login = (props) => {
                         <label className="Login-info">Enter your private key</label>
                     </div>
                     <div>
-                        <input className="Login-textinput" value={privateKey} type="text" maxLength={32} onChange={(e) => setup(e.target.value)} />
+                        <textarea className="Login-textinput" value={privateKey} type="text" onChange={(e) => setup(e.target.value)} />
                     </div>
                     <div>
                         <button className="Login-confirm" onClick={onLogin}>Sign in</button>

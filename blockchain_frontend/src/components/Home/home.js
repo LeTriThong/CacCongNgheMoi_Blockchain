@@ -45,7 +45,7 @@ const Home = (props) => {
                             <label className="Home-menu-content">Generate and create your own wallet. Receive a public address, enter private key to access</label>
                         </div>
                         <div>
-                            <label className="Home-menu-getStarted">Get started &#8594;</label>
+                            <Link to="/register" className="Home-menu-getStarted">Get started &#8594;</Link>
                         </div>
                     </div>
                 </div>

@@ -24,15 +24,22 @@ const generatePrivateKey = () => {
     return privateKey.toString(16);
 };
 
-const initWallet = () => {
-    // ! Don't override existing private keys
-    if (existsSync(privateKeyLocation)) {
-        return;
-    }
-    const newPrivateKey = generatePrivateKey();
+const initWallet = (privateKey) => {
+    // // ! Don't override existing private keys
+    // if (existsSync(privateKeyLocation)) {
+    //     return;
+    // }
+    // const newPrivateKey = generatePrivateKey();
+    console.log("privateKey = " + privateKey)
 
-    writeFileSync(privateKeyLocation, newPrivateKey);
-    console.log('New wallet with private key created to : %s', privateKeyLocation);
+    if (privateKey.match('^[a-fA-F0-9]+$') === null) {
+        console.log('New wallet private key is invalid');
+        return false;
+    }
+
+    writeFileSync(privateKeyLocation, privateKey);
+    console.log('New wallet with private key has been created!');
+    return true;
 };
 
 const deleteWallet = () => {

@@ -7,11 +7,13 @@ const _ = require('lodash');
 const { getTransactionPool } = require('./src/transactionPool');
 const cors = require('cors');
 const { io } = require('socket.io-client');
+const { default: axios } = require('axios');
 
 
 const httpPort = process.env.HTTP_PORT;
 const p2pPort = process.env.P2P_PORT;
 const uiSocketPort = process.env.UI_SOCKET_PORT;
+const superNodeHttpPort = process.env.SUPER_NODE_PORT;
 
 const initHttpServer = (httpPort) => {
     const app = express();
@@ -210,14 +212,76 @@ const initHttpServer = (httpPort) => {
         process.exit();
     });
 
+    app.post('/initWallet', (req, res) => {
+        console.log(req.body.privateKey);
+        const check = initWallet(req.body.privateKey);
+        if (check === true) {
+            res.status(200).send("Init successfully");
+        }
+        else {
+            res.status(400).send("Incorrect private key");
+        }
+    });
+
+    app.get('/logout', (req, res) => {
+        res.send();
+    })
+
     app.listen(httpPort, () => {
         console.log("App is listening http on port: " + httpPort)
     });
 };
 
+const getPeerFromSuperNode = async () => {
+    await axios.get('http://localhost:' + superNodeHttpPort + '/peers')
+        .then(res => {
+            if (res.status === 200) {
+                console.log("Connecting to peers")
+                console.log(res.data);
+                // setP2pAddress(res.data);
+                console.log(res.data.length);
+                for (let i = 0; i < res.data.length; ++i) {
+                    addPeer(res.data[i]);
+                }
+            }
+            else {
+                console.log("Fail to connect to peers");
+            }
+        })
+        .catch(error => {
+            console.log(error);
+        });
+}
+
+const addPeer = async (port) => {
+    if (superNodeHttpPort === httpPort) {
+        return;
+    }
+
+    await axios.post('http://localhost:' + port +'/addPeer', {
+        peer: p2pPort,
+        httpPort: httpPort
+    })
+        .then(res => {
+            if (res.status === 200) {
+                console.log("Add peer")
+                console.log(res.data);
+            }
+            else {
+                console.log("Fail to add peers");
+            }
+        })
+        .catch(error => {
+            console.log(error);
+        });
+    // connectToPeers(p2pPort, httpPort);
+}
 
 
 initHttpServer(httpPort);
 initP2PServer(p2pPort);
 initUISocketServer(uiSocketPort);
-initWallet();
+addPeer(superNodeHttpPort);
+getPeerFromSuperNode()
+
+// initWallet();

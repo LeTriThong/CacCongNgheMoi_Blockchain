@@ -5,26 +5,54 @@ import {ec} from 'elliptic';
 
 
 import '../../App.css'
+import { Link } from 'react-router-dom';
+import axios from 'axios';
+import Swal from 'sweetalert2';
 
 
 const Register = (props) => {
-    const [privateKey, setPrivateKey] = useState("asdada");
+    const SERVER_ENDPOINT = "http://localhost:" + process.env.REACT_APP_HTTP_PORT;
+
+    const [privateKey, setPrivateKey] = useState("Private key here");
 
     useEffect(() => {
         const EC = new ec('secp256k1');
         const keyPair = EC.genKeyPair();
-        setPrivateKey(keyPair.getPrivate());
+        setPrivateKey(keyPair.getPrivate().toString());
+        
     },[]);
 
 
 
 
     const directToMain = () => {
+        console.log("privateKey = ", privateKey);
+        axios.post(SERVER_ENDPOINT + '/initWallet', {
+            privateKey: privateKey
+        })
+        .then((res) => {
+            if (res.status === 200) {
+                props.history.push('/information');
+            }
+            else {
+                Swal.fire({
+                    icon: 'error',
+                    text: "Something went wrong"
+                })
+            }
+        })
+        .catch(e => {
+            Swal.fire({
+                icon: 'error',
+                text: "Something went wrong"
+            })
+        })
+        console.log(privateKey);
         
     }
 
     return (
-        <form>
+  
             <div className="Home">
                 <div style={{ flexDirection: 'row', marginBottom: '50px' }}>
                     <img className="Home-logo-image" src={logo} alt="logo"></img>
@@ -39,12 +67,16 @@ const Register = (props) => {
                             <label className="Login-info">Keep this carefully beacuse this cannot be retrieved</label>
                         </div>
                         <div>
-                            <input className="Login-textinput" value={privateKey} type="text" 
-                            maxLength={32} readOnly />
+                            <textarea className="Login-textinput" value={privateKey} type="text"  readOnly/>
                         </div>
-                        <div>
-                            <button className="Login-confirm" onClick={directToMain}>Access your wallet</button>
-                        </div>
+                        {/* <Link to={{
+                            pathname:'/information',
+                            privateKey: privateKey
+                        }}> */}
+                            <div>
+                                <button className="Login-confirm" onClick={directToMain}>Access your wallet</button>
+                            </div>
+                        {/* </Link> */}
                     </div>
                     <div className="Home-intro-image">
                         <img className="Home-image-spaceman" src={spaceman} alt="spaceman"></img>
@@ -52,7 +84,6 @@ const Register = (props) => {
                 </div>
 
             </div>
-        </form>
     )
 }
 
