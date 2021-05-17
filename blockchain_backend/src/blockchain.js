@@ -498,7 +498,7 @@ const MessageTypeEnum = {
     RESPONSE_TRANSACTION_POOL: 4,
     CREATE_CONNECTION: 5,
     RESPONSE_LATEST: 6,
-    HANDLE_TRANSACTION_HISTORY: 7
+    BROADCAST_NEW_TRANSACTION_HISTORY: 7
 }
 
 const UIMessageTypeEnum = {
@@ -672,12 +672,6 @@ const initMessageHandler = ws => {
                         break;
                     }
 
-                    // let receiveBlocks = [];
-                    // receiveBlocks.forEach((block) => {
-                    //     let newBlock = 
-                    //     receiveBlocks.push(newBlock);
-                    // })
-
                     handleBlockchainResponse(receiveBlocks);
                     break;
                 case MessageTypeEnum.QUERY_TRANSACTION_POOL:
@@ -709,7 +703,10 @@ const initMessageHandler = ws => {
                     peerHttpPortList.push("http://localhost:" + message.data.httpPort)
                     write(newSocket, queryChainLengthMsg());
                     break;
-                case MessageTypeEnum.HANDLE_TRANSACTION_HISTORY:
+                case MessageTypeEnum.BROADCAST_NEW_TRANSACTION_HISTORY:
+                    console.log("Receiving broadcast new transaction history");
+                    let newTxHist = JSON.parse(message.data);
+                    transactionHistory.push(newTxHist);
                     break;
             }
         }
@@ -767,6 +764,14 @@ const responseChainMessage = () => {
     }
     return data;
 
+}
+
+const broadcastNewTransactionHistory = (resp) => {
+    let data = {
+        'type': MessageTypeEnum.BROADCAST_NEW_TRANSACTION_HISTORY,
+        'data': JSON.stringify(resp)
+    }
+    return data;
 }
 
 const responseLatestMessage = () => {
@@ -918,6 +923,10 @@ const connectToPeers = (newPeer, httpPort) => {
                 }
                 handleBlockchainResponse(pData);
                 break;
+            case MessageTypeEnum.BROADCAST_NEW_TRANSACTION_HISTORY:
+                console.log("a7");
+                // transactionHistory.push(pData);
+                break;
         }
 
     })
@@ -946,5 +955,5 @@ const connectToPeers = (newPeer, httpPort) => {
 module.exports = {
     getBlockchain, isNewBlockValid, isChainValid, addBlockToChain, generateNextBlock, getLatestBlock, replaceChain, isBlockHasValidStructure,
     generateRawNextBlock, handleReceivedTransaction, sendTransaction, getAccountBalance, generateNextBlockWithTransaction, getUnspentTxOuts, getMyUnspentTransactionOutputs,
-    connectToPeers, broadcastTransactionPool, broadcastLatest, initP2PServer, getSockets, getSenderSockets, initUISocketServer, getPeerHttpPortList
+    connectToPeers, broadcastTransactionPool, broadcastLatest, initP2PServer, getSockets, getSenderSockets, initUISocketServer, getPeerHttpPortList, transactionHistory, broadcastNewTransactionHistory
 }

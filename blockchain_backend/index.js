@@ -1,7 +1,7 @@
 const dotenv = require('dotenv').config();
 const express = require('express');
 // const bodyParser = require('body-parser')
-const { getBlockchain, generateNextBlock, getUnspentTxOuts, generateNextBlockWithTransaction, getMyUnspentTransactionOutputs, generateRawNextBlock, getAccountBalance, getSockets, initP2PServer, connectToPeers, getSenderSockets, initUISocketServer, getPeerHttpPortList, sendTransaction } = require('./src/blockchain');
+const { getBlockchain, generateNextBlock, getUnspentTxOuts, generateNextBlockWithTransaction, getMyUnspentTransactionOutputs, generateRawNextBlock, getAccountBalance, getSockets, initP2PServer, connectToPeers, getSenderSockets, initUISocketServer, getPeerHttpPortList, sendTransaction, transactionHistory, broadcastNewTransactionHistory } = require('./src/blockchain');
 const { initWallet, getPublicFromWallet } = require('./src/wallet');
 const _ = require('lodash');
 const { getTransactionPool } = require('./src/transactionPool');
@@ -165,7 +165,14 @@ const initHttpServer = (httpPort) => {
                 throw Error('invalid address or amount');
             }
             const resp = sendTransaction(address, amount);
+            resp.sender = getPublicFromWallet();
+            resp.receiver = address;
+            resp.completeStatus = false;
             res.send(resp);
+
+            transactionHistory.push(resp);
+            broadcastNewTransactionHistory(resp);
+            
         } catch (e) {
             console.log(e.message);
             res.status(400).send(e.message);
@@ -225,6 +232,10 @@ const initHttpServer = (httpPort) => {
 
     app.get('/logout', (req, res) => {
         res.send();
+    })
+
+    app.get('/getTransactionHistory', (req, res) => {
+        res.status(200).send(transactionHistory);
     })
 
     app.listen(httpPort, () => {
