@@ -1,7 +1,7 @@
 const dotenv = require('dotenv').config();
 const express = require('express');
 // const bodyParser = require('body-parser')
-const { getBlockchain, generateNextBlock, getUnspentTxOuts, generateNextBlockWithTransaction, getMyUnspentTransactionOutputs, generateRawNextBlock, getAccountBalance, getSockets, initP2PServer, connectToPeers, getSenderSockets, initUISocketServer, getPeerHttpPortList, sendTransaction, transactionHistory, broadcastNewTransactionHistory } = require('./src/blockchain');
+const { getBlockchain, generateNextBlock, getUnspentTxOuts, generateNextBlockWithTransaction, getMyUnspentTransactionOutputs, generateRawNextBlock, getAccountBalance, getSockets, initP2PServer, connectToPeers, getSenderSockets, initUISocketServer, getPeerHttpPortList, sendTransaction, transactionHistory, broadcastNewTransactionHistory, broadcast } = require('./src/blockchain');
 const { initWallet, getPublicFromWallet } = require('./src/wallet');
 const _ = require('lodash');
 const { getTransactionPool } = require('./src/transactionPool');
@@ -171,7 +171,8 @@ const initHttpServer = (httpPort) => {
             res.send(resp);
 
             transactionHistory.push(resp);
-            broadcastNewTransactionHistory(resp);
+            let message = broadcastNewTransactionHistory(resp);
+            broadcast(message);
             
         } catch (e) {
             console.log(e.message);
@@ -252,7 +253,9 @@ const getPeerFromSuperNode = async () => {
                 // setP2pAddress(res.data);
                 console.log(res.data.length);
                 for (let i = 0; i < res.data.length; ++i) {
-                    addPeer(res.data[i]);
+                    if (res,data[i] !== 'http://localhost:' + superNodeHttpPort) {
+                        addPeer(res.data[i]);
+                    }
                 }
             }
             else {
@@ -264,12 +267,12 @@ const getPeerFromSuperNode = async () => {
         });
 }
 
-const addPeer = async (port) => {
+const addPeer = async (address) => {
     if (superNodeHttpPort === httpPort) {
         return;
     }
 
-    await axios.post('http://localhost:' + port +'/addPeer', {
+    await axios.post(address +'/addPeer', {
         peer: p2pPort,
         httpPort: httpPort
     })
@@ -292,7 +295,7 @@ const addPeer = async (port) => {
 initHttpServer(httpPort);
 initP2PServer(p2pPort);
 initUISocketServer(uiSocketPort);
-addPeer(superNodeHttpPort);
-getPeerFromSuperNode()
+addPeer('http://localhost:' + superNodeHttpPort);
+getPeerFromSuperNode();
 
 // initWallet();

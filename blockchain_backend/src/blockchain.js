@@ -955,5 +955,5 @@ const connectToPeers = (newPeer, httpPort) => {
 module.exports = {
     getBlockchain, isNewBlockValid, isChainValid, addBlockToChain, generateNextBlock, getLatestBlock, replaceChain, isBlockHasValidStructure,
     generateRawNextBlock, handleReceivedTransaction, sendTransaction, getAccountBalance, generateNextBlockWithTransaction, getUnspentTxOuts, getMyUnspentTransactionOutputs,
-    connectToPeers, broadcastTransactionPool, broadcastLatest, initP2PServer, getSockets, getSenderSockets, initUISocketServer, getPeerHttpPortList, transactionHistory, broadcastNewTransactionHistory
+    connectToPeers, broadcastTransactionPool, broadcastLatest, initP2PServer, getSockets, getSenderSockets, initUISocketServer, getPeerHttpPortList, transactionHistory, broadcastNewTransactionHistory, broadcast
 }
