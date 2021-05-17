@@ -1,7 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import logo from '../../assets/short-hand-logo-web.png';
 import spaceman from '../../assets/big-spaceman.png';
-import { useHistory } from "react-router-dom";
 
 
 import '../../App.css'
@@ -12,7 +11,6 @@ import Swal from 'sweetalert2';
 const Login = (props) => {
     const SERVER_ENDPOINT = "http://localhost:" + process.env.REACT_APP_HTTP_PORT;
 
-    const history = useHistory();
     const [privateKey, setPrivateKey] = useState("");
     // const setupText = (t) => {
     //     console.log(t);

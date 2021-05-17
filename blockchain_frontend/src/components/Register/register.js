@@ -5,7 +5,6 @@ import {ec} from 'elliptic';
 
 
 import '../../App.css'
-import { Link } from 'react-router-dom';
 import axios from 'axios';
 import Swal from 'sweetalert2';
 

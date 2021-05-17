@@ -20,7 +20,8 @@ const ioClient = require('socket.io-client');
 
 const http1 = require('http').createServer();
 const uiSocketServer = require('socket.io')(http1, {
-    cors: { origin: "*" }
+    cors: { origin: "*" },
+    setTimeout: 20000
 })
 
 
@@ -479,6 +480,7 @@ console.log(getBlockchain());
 const sockets = [];
 const senderSockets = [];
 const peerHttpPortList = [];
+const transactionHistory = [];
 
 const getPeerHttpPortList = () => {
     return peerHttpPortList;
@@ -495,7 +497,8 @@ const MessageTypeEnum = {
     QUERY_TRANSACTION_POOL: 3,
     RESPONSE_TRANSACTION_POOL: 4,
     CREATE_CONNECTION: 5,
-    RESPONSE_LATEST: 6
+    RESPONSE_LATEST: 6,
+    HANDLE_TRANSACTION_HISTORY: 7
 }
 
 const UIMessageTypeEnum = {
@@ -699,10 +702,14 @@ const initMessageHandler = ws => {
                     break;
                 case MessageTypeEnum.CREATE_CONNECTION:
                     console.log(message.data.port);
-                    const newSocket = ioClient("http://localhost:" + message.data.port);
+                    const newSocket = ioClient("http://localhost:" + message.data.port, {
+                        setTimeout: 20000
+                    });
                     senderSockets.push(newSocket);
                     peerHttpPortList.push("http://localhost:" + message.data.httpPort)
                     write(newSocket, queryChainLengthMsg());
+                    break;
+                case MessageTypeEnum.HANDLE_TRANSACTION_HISTORY:
                     break;
             }
         }

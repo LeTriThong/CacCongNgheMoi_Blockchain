@@ -1,29 +1,36 @@
-import React, { useEffect, useState } from 'react';
+import React from 'react';
 
 
 import '../../App.css'
 
 
 
-const TransactionInfo = (props) => {
-    const [blockNumber, setBlockNumber] = useState("ID");
-    const [time, setTime] = useState("TO");
+const BlockInfo = (props) => {
+
    
 
+    const setNumber = () => {
+        var date = new Date(props.blockInfo.timestamp * 1000);
+      
+        
+        // Will display time in 10:30:23 format
+        return date.toLocaleString();
+        // return t;
+    }
 
     return (
-        <div className="Transaction-info-container">
-            <div>
-                <label class="Transaction-info-title">ID</label>
-                <label class="Transaction-info-content">{props.blockInfo.index}</label>
+        <div className="Block-info-container">
+            <div style={{display: 'flex', flexDirection: 'row'}}>
+                <label class="Block-info-title">ID</label>
+                <label class="Block-info-content">{props.blockInfo.index}</label>
             </div>
-            <div>
-                <label class="Transaction-info-title">From</label>
-                <label class="Transaction-info-content">{props.blockInfo.timestamp}</label>
+            <div style={{display: 'flex', flexDirection: 'row'}}>
+                <label class="Block-info-title">From</label>
+                <label class="Block-info-content">{setNumber()}</label>
             </div>
 
         </div>
     )
 }
 
-export default TransactionInfo;
+export default BlockInfo;

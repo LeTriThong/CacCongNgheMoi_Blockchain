@@ -310,3 +310,21 @@
   background-color: #05C0A5;
 }
 
+.Block-info-container {
+  display: flex;
+  flex-direction: column;
+  margin-bottom: 20px;
+  margin-left: 20px;
+
+}
+
+.Block-info-title {
+  display: flex;
+
+}
+
+.Block-info-content {
+  display: flex;
+  color: #05C0A5;
+  margin-left: 20px;
+}
