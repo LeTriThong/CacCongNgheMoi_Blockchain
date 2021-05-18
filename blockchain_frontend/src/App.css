@@ -327,4 +327,18 @@
   display: flex;
   color: #05C0A5;
   margin-left: 20px;
+  word-break: break-all;
+}
+
+.Complete-status-true {
+  display: flex;
+  color: #4caf50;
+  margin-left: 20px;
+}
+
+.Complete-status-false {
+  display: flex;
+  color: #ffc107;
+  margin-left: 20px;
+
 }

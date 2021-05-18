@@ -253,7 +253,7 @@ const getPeerFromSuperNode = async () => {
                 // setP2pAddress(res.data);
                 console.log(res.data.length);
                 for (let i = 0; i < res.data.length; ++i) {
-                    if (res,data[i] !== 'http://localhost:' + superNodeHttpPort) {
+                    if (res.data[i] !== 'http://localhost:' + httpPort && res.data[i] !== 'http://localhost:' + superNodeHttpPort) {
                         addPeer(res.data[i]);
                     }
                 }
@@ -290,12 +290,15 @@ const addPeer = async (address) => {
         });
     // connectToPeers(p2pPort, httpPort);
 }
+const initConnect = async() => {
+    await addPeer('http://localhost:' + superNodeHttpPort);
+    await getPeerFromSuperNode();
+}
 
 
 initHttpServer(httpPort);
 initP2PServer(p2pPort);
 initUISocketServer(uiSocketPort);
-addPeer('http://localhost:' + superNodeHttpPort);
-getPeerFromSuperNode();
+initConnect();
 
 // initWallet();

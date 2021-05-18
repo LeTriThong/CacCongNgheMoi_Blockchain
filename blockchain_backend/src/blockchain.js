@@ -201,6 +201,7 @@ const generateRawNextBlock = (blockData) => {
     const newBlock = findBlock(nextIndex, previousBlock.hash, nextTimestamp, blockData, difficulty);
     if (addBlockToChain(newBlock)) {
         broadcastLatest();
+        confirmTransactionHistory();
         return newBlock;
     } else {
         console.log("Invalid add block to chain")
@@ -216,6 +217,12 @@ const generateNextBlock = () => {
 }
 
 
+const confirmTransactionHistory = () => {
+    transactionHistory.forEach(element => {
+        element.completeStatus = true;
+    });
+    broadcastToUI(UIMessageTypeEnum.ADD_BLOCK_TO_CHAIN, "");
+}
 /**
  * 
  * @returns the unspent transaction outputs owned by the wallet (using public key)
@@ -588,6 +595,8 @@ const queryTransactionPoolMsg = () => ({
     'data': null
 });
 
+
+
 /**
  * Init a connection with the given websocket
  * @param {WebSocket} ws 
@@ -824,9 +833,15 @@ const handleBlockchainResponse = receivedBlocks => {
         console.log('Prepare to add the block...');
         if (latestBlockHeld.hash === latestBlockReceived.previousHash) {
             if (addBlockToChain(latestBlockReceived)) {
-                broadcast(responseLatestMessage());
+                //! broadcast again?
+                
+                // broadcast(responseLatestMessage());
                 // uiSocketServer.send(addBlockToChainUIMessage(latestBlockReceived));
+                transactionHistory.forEach(element => {
+                    element.completeStatus = true;
+                });
                 broadcastToUI(UIMessageTypeEnum.ADD_BLOCK_TO_CHAIN, latestBlockReceived);
+                
             }
         } else if (receivedBlocks.length === 1) {
             console.log('We have to query the chain from our peer');

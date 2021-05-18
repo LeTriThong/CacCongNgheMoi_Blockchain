@@ -10,6 +10,7 @@ import '../../App.css'
 import { io } from "socket.io-client"
 import { Link } from 'react-router-dom';
 import BlockInfo from './block-info'
+import TransactionInfo from './transaction_info';
 // const ENDPOINT = "http://localhost:" + process.env.REACT_APP_P2P_PORT;
 const SERVER_ENDPOINT = "http://localhost:" + process.env.REACT_APP_HTTP_PORT;
 const SUPER_NODE_ENDPOINT = "http://localhost:" + process.env.REACT_APP_SUPER_NODE_PORT;
@@ -23,6 +24,7 @@ const Information = (props) => {
     const [coin, setCoin] = useState(-5);
     const [transactionPool, setTransactionPool] = useState([]);
     const [blockchain, setBlockchain] = useState([]);
+    const [transactionHistory, setTransactionHistory] = useState([]);
 
 
     const [transactionAddress, setTransactionAddress] = useState("");
@@ -87,9 +89,11 @@ const Information = (props) => {
                 case UIMessageTypeEnum.ADD_BLOCK_TO_CHAIN:
                     getBlockchain();
                     getBalance();
+                    getTransactionHistory();
                     break;
                 case UIMessageTypeEnum.UPDATE_TRANSACTION_POOL:
                     getTransactionPool();
+                    getTransactionHistory();
                     break;
                 case UIMessageTypeEnum.UPDATE_BALANCE:
                     getBalance();
@@ -120,8 +124,8 @@ const Information = (props) => {
         //     console.log(error);
         // });
         const init = async () => {
-            await addPeer(SUPER_NODE_ENDPOINT);
-            await getPeerFromSuperNode();
+            // await addPeer(SUPER_NODE_ENDPOINT);
+            // await getPeerFromSuperNode();
             // console.log(p2pAddress.length);
             // for(let i = 0; i < p2pAddress.length; ++i) {
             //     addPeer(p2pAddress[i]);
@@ -142,7 +146,22 @@ const Information = (props) => {
         init();
     }, [])
 
-
+    const getTransactionHistory = async () => {
+        await Axios.get(SERVER_ENDPOINT + '/getTransactionHistory')
+            .then(res => {
+                if (res.status === 200) {
+                    console.log("Transaction history")
+                    console.log(res.data);
+                    setTransactionHistory(res.data.reverse());
+                }
+                else {
+                    console.log("Fail to get transaction history");
+                }
+            })
+            .catch(error => {
+                console.log(error);
+            });
+    }
 
     const addPeer = async (endpoint) => {
         if (endpoint === SERVER_ENDPOINT) {
@@ -418,6 +437,20 @@ const Information = (props) => {
                             <button className="Info-send-transaction-confirm" onClick={onMineBlock} >Mine block</button>
 
                         </div>
+
+                        <div className="Info-send-transaction-container">
+                            <label className="Info-send-transaction">Latest transaction</label>
+                        </div>
+                        {
+                            transactionHistory.slice(0, 10).map(e => {
+                                if (e.index !== 0) {
+                                    return cloneElement(<TransactionInfo txInfo={e} />)
+                                }
+                                else {
+                                    return <div/>;
+                                }
+                            })
+                        }
                     </div>
                     <div style={{ display: 'flex', flex: 1, flexDirection: 'column', marginLeft: '20px' }}>
                         <div className="Info-send-transaction-container">
@@ -437,8 +470,8 @@ const Information = (props) => {
 
                     </div>
                 </div>
-                <div>
-                    <label className="Info-send-title">{address} </label>
+                {/* <div>
+                    <label className="Info-send-title">{JSON.stringify(transactionHistory)} </label>
                 </div>
                 <div>
                     <label className="Info-send-title">Transaction pool: </label>
@@ -454,7 +487,7 @@ const Information = (props) => {
 
                     <label className="Info-send-title">{JSON.stringify(blockchain)}</label>
 
-                </div>
+                </div> */}
             </div>
 
 
