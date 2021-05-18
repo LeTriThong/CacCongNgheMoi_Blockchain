@@ -3,6 +3,7 @@
 Blockchain demo project with proof of work, written in Javascript - based on naivecoin: https://github.com/lhartikk/naivecoin-ui
 
 Youtube demo: https://youtu.be/_sU1c_6za_w
+Github link: https://github.com/LeTriThong/CacCongNgheMoi_Blockchain
 
 ## Features
 
@@ -30,8 +31,10 @@ REACT_APP_SUPER_NODE_PORT=3001 //The super node port
 PORT=3008   //Frontend port, the web will run at this port
 ```
 
-3. Run 2 terminals for the frontend & backend project for **EACH** node
+3. Run 2 terminals for the frontend & backend project for **EACH** node. 
+
 **Note: You must run the super node (the one with the `SUPER_NODE_PORT == HTTP_PORT` FIRST**
+
 ```sh
 cd blockchain_frontend
 npm install
