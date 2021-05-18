@@ -3,6 +3,7 @@
 Blockchain demo project with proof of work, written in Javascript - based on naivecoin: https://github.com/lhartikk/naivecoin-ui
 
 Youtube demo: https://youtu.be/_sU1c_6za_w
+
 Github link: https://github.com/LeTriThong/CacCongNgheMoi_Blockchain
 
 ## Features
